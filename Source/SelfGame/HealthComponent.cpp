@@ -21,6 +21,7 @@ void UHealthComponent::TakeDamage(float Amount)
     if (CurrentHP <= 0.f)
     {
         OnDeath.Broadcast();
-        // 화면/로그 표시는 테스트 제거 요청에 따라 생략
+            UE_LOG(LogTemp, Error, TEXT("You are dead!!"));
+        // 죽음 로그 표시
     }
 }
