@@ -3,12 +3,24 @@
 #include "InputCoreTypes.h"
 #include "Engine/Engine.h"
 #include "../Weapon.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "EnhancedInputSubsystems.h"
+#include "EnhancedInputComponent.h"
+#include "InputActionValue.h"
 
 ABaseCharacter::ABaseCharacter()
 {
     HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
     // PrimaryActorTick.bCanEverTick = true; // 필요하면 켜세요
+
+    SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+    SpringArm->SetupAttachment(RootComponent);
+    SpringArm->TargetArmLength = 700.f;
+
+    Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+    Camera->SetupAttachment(SpringArm);
 
 
 }
@@ -83,6 +95,22 @@ void ABaseCharacter::AttachWeapon(AWeapon* W)
     W->SetActorEnableCollision(true);
 
 
+}
+
+void ABaseCharacter::OnMove(const FInputActionValue& Value)
+{
+}
+
+void ABaseCharacter::OnLook(const FInputActionValue& Value)
+{
+}
+
+void ABaseCharacter::OnJumpPressed(const FInputActionValue& Value)
+{
+}
+
+void ABaseCharacter::OnJumpReleased(const FInputActionValue& Value)
+{
 }
 
 void ABaseCharacter::FirePressed()
