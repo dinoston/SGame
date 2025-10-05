@@ -6,7 +6,6 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
 
@@ -69,11 +68,23 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
     
+    if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+    {
+        if (IA_Move) EIC->BindAction(IA_Move, ETriggerEvent::Triggered, this, &ABaseCharacter::OnMove);
+        if (IA_Look) EIC->BindAction(IA_Look, ETriggerEvent::Triggered, this, &ABaseCharacter::OnLook);
+
+        if (IA_Jump)
+        {
+            EIC->BindAction(IA_Jump, ETriggerEvent::Started, this, &ABaseCharacter::OnJumpPressed);
+            EIC->BindAction(IA_Jump, ETriggerEvent::Completed, this, &ABaseCharacter::OnJumpReleased);
+            EIC->BindAction(IA_Jump, ETriggerEvent::Canceled, this, &ABaseCharacter::OnJumpPressed);
+
+        }
+
+    // (옵션) 기존 테스트: 0 → 50 데미지  
     PlayerInputComponent->BindKey(EKeys::Zero, IE_Pressed, this, &ABaseCharacter::TestTakeDamage);
-    // 필요 시 발사/교체 바인딩 예:
-    // PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &ABaseCharacter::FirePressed);
-    // PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &ABaseCharacter::EquipPrimary);
-    // PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &ABaseCharacter::EquipSecondary);
+    }   
+    
 }
 
 void ABaseCharacter::AttachWeapon(AWeapon* W)
@@ -93,24 +104,38 @@ void ABaseCharacter::AttachWeapon(AWeapon* W)
     // 보이기/충돌 활성화(장착 상태)
     W->SetActorHiddenInGame(false);
     W->SetActorEnableCollision(true);
-
-
 }
 
+/* ── 입력 핸들러 구현 ── */
 void ABaseCharacter::OnMove(const FInputActionValue& Value)
 {
+    const FVector2D Axis = Value.Get<FVector2D>(); // X=Right, Y=Forward
+    if (Controller)
+    {
+        const FRotator YawRot(0.f, Controller->GetControlRotation().Yaw, 0.f);
+        const FVector Fwd = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
+        const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
+        AddMovementInput(Fwd, Axis.Y);
+        AddMovementInput(Right, Axis.X);
+    }
+
 }
 
 void ABaseCharacter::OnLook(const FInputActionValue& Value)
 {
+    const FVector2D Axis = Value.Get<FVector2D>(); // Mouse X/Y
+    AddControllerYawInput(Axis.X);
+    AddControllerPitchInput(Axis.Y);
 }
 
 void ABaseCharacter::OnJumpPressed(const FInputActionValue& Value)
 {
+    Jump();
 }
 
 void ABaseCharacter::OnJumpReleased(const FInputActionValue& Value)
 {
+    StopJumping();
 }
 
 void ABaseCharacter::FirePressed()

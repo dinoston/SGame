@@ -35,9 +35,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
     TObjectPtr<UCameraComponent> Camera;
 
-    //Enhanced Input//
-    
 
+
+    //Enhanced Input//
     UPROPERTY(EditDefaultsOnly, Category = "Input")
     UInputAction* IA_Move = nullptr;
 
