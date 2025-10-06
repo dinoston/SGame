@@ -1,25 +1,34 @@
 ﻿#include "BaseCharacter.h"
 #include "../HealthComponent.h"
 #include "InputCoreTypes.h"
+#include "Components/CapsuleComponent.h"
 #include "Engine/Engine.h"
 #include "../Weapon.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "EnhancedInputComponent.h"
-#include "InputActionValue.h"
 
 ABaseCharacter::ABaseCharacter()
 {
+
     HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
     // PrimaryActorTick.bCanEverTick = true; // 필요하면 켜세요
 
     SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-    SpringArm->SetupAttachment(RootComponent);
-    SpringArm->TargetArmLength = 700.f;
+    SpringArm->SetupAttachment(GetRootComponent());
+    SpringArm->TargetArmLength = 300.f;
+    //SpringArm->bUsePawnControlRotation = true;
 
     Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
     Camera->SetupAttachment(SpringArm);
+    //Camera->bUsePawnControlRotation = false;
+
+    // 캐릭터 회전/이동 세팅(선호 스타일)
+    bUseControllerRotationPitch = false;
+    bUseControllerRotationRoll = false;
+    bUseControllerRotationYaw = false; // 카메라만 회전
+    GetCharacterMovement()->bOrientRotationToMovement = true; // 이동 방향으로 회전
 
 
 }
@@ -27,6 +36,8 @@ ABaseCharacter::ABaseCharacter()
 void ABaseCharacter::BeginPlay()
 {
     Super::BeginPlay();
+
+
 
     // ── 무기 스폰 + 손 소켓에 부착 ──
     FActorSpawnParameters Params;
@@ -64,28 +75,16 @@ void ABaseCharacter::Tick(float DeltaTime)
     Super::Tick(DeltaTime);
 }
 
+
+// ★ 컨트롤러가 모든 인풋 바인딩을 담당하므로 비워둠
 void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
     
-    if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-    {
-        if (IA_Move) EIC->BindAction(IA_Move, ETriggerEvent::Triggered, this, &ABaseCharacter::OnMove);
-        if (IA_Look) EIC->BindAction(IA_Look, ETriggerEvent::Triggered, this, &ABaseCharacter::OnLook);
-
-        if (IA_Jump)
-        {
-            EIC->BindAction(IA_Jump, ETriggerEvent::Started, this, &ABaseCharacter::OnJumpPressed);
-            EIC->BindAction(IA_Jump, ETriggerEvent::Completed, this, &ABaseCharacter::OnJumpReleased);
-            EIC->BindAction(IA_Jump, ETriggerEvent::Canceled, this, &ABaseCharacter::OnJumpPressed);
-
-        }
-
-    // (옵션) 기존 테스트: 0 → 50 데미지  
-    PlayerInputComponent->BindKey(EKeys::Zero, IE_Pressed, this, &ABaseCharacter::TestTakeDamage);
-    }   
-    
 }
+
+/* ---------- Weapon helpers ---------- */
+
 
 void ABaseCharacter::AttachWeapon(AWeapon* W)
 {
@@ -104,38 +103,6 @@ void ABaseCharacter::AttachWeapon(AWeapon* W)
     // 보이기/충돌 활성화(장착 상태)
     W->SetActorHiddenInGame(false);
     W->SetActorEnableCollision(true);
-}
-
-/* ── 입력 핸들러 구현 ── */
-void ABaseCharacter::OnMove(const FInputActionValue& Value)
-{
-    const FVector2D Axis = Value.Get<FVector2D>(); // X=Right, Y=Forward
-    if (Controller)
-    {
-        const FRotator YawRot(0.f, Controller->GetControlRotation().Yaw, 0.f);
-        const FVector Fwd = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
-        const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
-        AddMovementInput(Fwd, Axis.Y);
-        AddMovementInput(Right, Axis.X);
-    }
-
-}
-
-void ABaseCharacter::OnLook(const FInputActionValue& Value)
-{
-    const FVector2D Axis = Value.Get<FVector2D>(); // Mouse X/Y
-    AddControllerYawInput(Axis.X);
-    AddControllerPitchInput(Axis.Y);
-}
-
-void ABaseCharacter::OnJumpPressed(const FInputActionValue& Value)
-{
-    Jump();
-}
-
-void ABaseCharacter::OnJumpReleased(const FInputActionValue& Value)
-{
-    StopJumping();
 }
 
 void ABaseCharacter::FirePressed()

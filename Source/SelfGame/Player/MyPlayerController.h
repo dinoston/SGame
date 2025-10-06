@@ -5,8 +5,10 @@
 #include "GameFramework/PlayerController.h"
 #include "MyPlayerController.generated.h"
 
-class UInputMappingContext;
 
+struct FInputActionValue;
+class UInputMappingContext;
+class UInputAction;
 
 UCLASS()
 class SELFGAME_API AMyPlayerController : public APlayerController
@@ -15,15 +17,34 @@ class SELFGAME_API AMyPlayerController : public APlayerController
 	
 
 public:
+	AMyPlayerController(const FObjectInitializer& ObjectInitializer);
+
+protected:
 	virtual void BeginPlay() override;
+	virtual void SetupInputComponent() override;
 
-	/** 적용할 IMC (에디터에서 IMC_Player 지정) */
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputMappingContext* DefaultIMC = nullptr;
+private:
+	void Input_Attack(const FInputActionValue& InputValue);
+	void Input_Move(const FInputActionValue& InputValue);
+	void Input_Look(const FInputActionValue& InputValue);
+	void Input_Jump(const FInputActionValue& InputValue);
 
-	/** IMC 우선순위(보통 0) */
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	int32 IMC_Priority = 0;
+
+protected:
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputMappingContext> DefaultIMC;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> IA_Attack;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> IA_Move;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> IA_Look;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> IA_Jump;
 	
 
 };
