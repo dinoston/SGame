@@ -18,18 +18,29 @@ ABaseCharacter::ABaseCharacter()
     SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
     SpringArm->SetupAttachment(GetRootComponent());
     SpringArm->TargetArmLength = 300.f;
-    //SpringArm->bUsePawnControlRotation = true;
+    SpringArm->bUsePawnControlRotation = true;                          // 스프링암이 컨트롤러 회전 따라감
 
     Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
     Camera->SetupAttachment(SpringArm);
-    //Camera->bUsePawnControlRotation = false;
+    Camera->bUsePawnControlRotation = false;                            // 카메라는 암을 따름
 
-    // 캐릭터 회전/이동 세팅(선호 스타일)
-    bUseControllerRotationPitch = false;
-    bUseControllerRotationRoll = false;
-    bUseControllerRotationYaw = false; // 카메라만 회전
-    GetCharacterMovement()->bOrientRotationToMovement = true; // 이동 방향으로 회전
+    //// 캐릭터 회전/이동 세팅(선호 스타일)
+    //bUseControllerRotationPitch = false;
+    //bUseControllerRotationRoll = false;
+    //bUseControllerRotationYaw = true; // 카메라만 회전
+    //GetCharacterMovement()->bOrientRotationToMovement = true; // 이동 방향으로 회전
+    //// (선택) 부드럽게 컨트롤러 방향으로 회전하고 싶으면
+    ////GetCharacterMovement()->bUseControllerDesiredRotation = false;
+    //GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f); // 회전 속도
+    bUseControllerRotationYaw = true;
+    GetCharacterMovement()->bOrientRotationToMovement = false;
+    GetCharacterMovement()->bUseControllerDesiredRotation = true; // 부드러운 회전
+    GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
 
+
+    //점프 속성
+    GetCharacterMovement()->JumpZVelocity = 420.f;   // 점프 높이 (기본 420)
+    GetCharacterMovement()->AirControl = 0.35f;   // 공중에서 방향 전환
 
 }
 

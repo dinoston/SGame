@@ -27,8 +27,10 @@ private:
 	void Input_Attack(const FInputActionValue& InputValue);
 	void Input_Move(const FInputActionValue& InputValue);
 	void Input_Look(const FInputActionValue& InputValue);
-	void Input_Jump(const FInputActionValue& InputValue);
 
+	// ★ 점프: 누름/뗌을 분리
+	void Input_JumpStart(const FInputActionValue& InputValue);
+	//void Input_JumpStop(const FInputActionValue& InputValue);
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
