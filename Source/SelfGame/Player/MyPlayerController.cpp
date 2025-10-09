@@ -41,7 +41,7 @@ void AMyPlayerController::SetupInputComponent()
 
 	if (auto* EIC = Cast<UEnhancedInputComponent>(InputComponent))
 	{
-		if(IA_Attack)	EIC->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &ThisClass::Input_Attack);
+		if(IA_Attack)	EIC->BindAction(IA_Attack, ETriggerEvent::Started, this, &ThisClass::Input_Attack);
 		if (IA_Move)	EIC->BindAction(IA_Move, ETriggerEvent::Triggered, this, &ThisClass::Input_Move);
 		if (IA_Look)	EIC->BindAction(IA_Look, ETriggerEvent::Triggered, this, &ThisClass::Input_Look);
 		
@@ -59,7 +59,7 @@ void AMyPlayerController::SetupInputComponent()
 
 void AMyPlayerController::Input_Attack(const FInputActionValue& InputValue)
 {
-	GEngine->AddOnScreenDebugMessage(0, 1.0f, FColor::Cyan, TEXT("Attack"));
+	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Cyan, TEXT("Attack"));
 
 }
 
