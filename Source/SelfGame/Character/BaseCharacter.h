@@ -40,6 +40,21 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
     TObjectPtr<UCameraComponent> Camera;
+
+    //걷기, 뛰기 //
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float WalkSpeed = 400.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float SprintSpeed = 700.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Input")
+    class UInputAction* IA_Running = nullptr;  // 에디터에서 IA_Running 지정
+
+    void OnRunPressed(const struct FInputActionValue& Value);
+    void OnRunReleased(const struct FInputActionValue& Value);
+    
     
 
    

@@ -6,6 +6,10 @@
 #include "../Weapon.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "EnhancedInputComponent.h"
+#include "InputActionValue.h"
+
+
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -47,6 +51,10 @@ ABaseCharacter::ABaseCharacter()
 void ABaseCharacter::BeginPlay()
 {
     Super::BeginPlay();
+
+
+    GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;   // 기본은 걷기 속도
+
 
 
 
@@ -92,6 +100,29 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
     
+    //걷기 뛰기//
+    if (auto* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+    {
+        if (IA_Running)
+        {
+            EIC->BindAction(IA_Running, ETriggerEvent::Started, this, &ABaseCharacter::OnRunPressed);
+            EIC->BindAction(IA_Running, ETriggerEvent::Completed, this, &ABaseCharacter::OnRunReleased);
+            EIC->BindAction(IA_Running, ETriggerEvent::Canceled, this, &ABaseCharacter::OnRunReleased);
+        }
+    }
+
+}
+
+void ABaseCharacter::OnRunPressed(const FInputActionValue& Value)
+{
+    GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+
+}
+
+void ABaseCharacter::OnRunReleased(const FInputActionValue& Value)
+{
+    GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+
 }
 
 /* ---------- Weapon helpers ---------- */
