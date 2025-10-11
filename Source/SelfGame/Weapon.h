@@ -1,12 +1,19 @@
-
+ï»¿
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "NiagaraSystem.h"        // UNiagaraSystem
+#include "Sound/SoundBase.h"      // USoundBase
 #include "Weapon.generated.h"
 
 
 class USkeletalMeshComponent;
+class UNiagaraSystem;
+class USoundBase;
+class UDamageType;
+
+
 
 UCLASS()
 class SELFGAME_API AWeapon : public AActor
@@ -19,7 +26,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	/** ¹«±â ¸Ş½Ã (ÃÑ±¸ ¼ÒÄÏ ÀÌ¸§: Muzzle ±ÇÀå) */
+	/** ë¬´ê¸° ë©”ì‹œ (ì´êµ¬ ì†Œì¼“ ì´ë¦„: Muzzle ê¶Œì¥) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	USkeletalMeshComponent* Mesh;
 
@@ -29,23 +36,50 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
-	/** ÇÑ ¹ß µ¥¹ÌÁö */
+	// ===== Stats =====
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
 	float Damage = 25.f;
 
-	/** »ç°Å¸® (È÷Æ®½ºÄµ Àü¿ë) */
+
+
+	/** ì‚¬ê±°ë¦¬ (íˆíŠ¸ìŠ¤ìº” ì „ìš©) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
 	float Range = 10000.f;
 
-	/** ÃÑ±¸ ¼ÒÄÏ ÀÌ¸§ */
+	// ì´ˆë‹¹ ë°œì‚¬ìˆ˜(0ì´ë©´ ì œí•œ ì—†ìŒ)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
+	float FireRate = 8.f;
+
+	// íƒ„ì•½(âˆ’1ì´ë©´ ë¬´í•œ)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
+	int32 Ammo = -1;
+
+	// ===== Sockets / FX =====
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	FName MuzzleSocketName = TEXT("Muzzle");
 
-	/** ¹ß»ç (ÆÄ»ı¿¡¼­ override) */
+	// ë¨¸ì¦ í”Œë˜ì‹œ(ì›í•˜ë©´ UParticleSystem*ë¡œ êµì²´ ê°€ëŠ¥)
+	UPROPERTY(EditDefaultsOnly, Category = "FX")
+	UNiagaraSystem* MuzzleFX = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "FX")
+	USoundBase* FireSound = nullptr;
+
+	// ì¶©ëŒ ì§€ì  ì´í™íŠ¸(ì„ íƒ)
+	UPROPERTY(EditDefaultsOnly, Category = "FX")
+	UNiagaraSystem* ImpactFX = nullptr;
+
+	// í”„ë¡œì íŠ¸íƒ€ì¼ ë¬´ê¸°ë¼ë©´ ì§€ì •(ì—†ìœ¼ë©´ íˆíŠ¸ìŠ¤ìº”)
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TSubclassOf<AActor> ProjectileClass;
+
+
+
+	/** ë°œì‚¬ (íŒŒìƒì—ì„œ override) */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	virtual void Fire();
 	
-	/** ¸Ş½Ã/¿À³Ê Getter (ÇÊ¿ä½Ã »ç¿ë) */
+	/** ë©”ì‹œ/ì˜¤ë„ˆ Getter (í•„ìš”ì‹œ ì‚¬ìš©) */
 	FORCEINLINE USkeletalMeshComponent* GetMesh() const { return Mesh; }
 	
 
