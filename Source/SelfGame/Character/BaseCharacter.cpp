@@ -28,18 +28,12 @@ ABaseCharacter::ABaseCharacter()
     Camera->SetupAttachment(SpringArm);
     Camera->bUsePawnControlRotation = false;                            // 카메라는 암을 따름
 
-    //// 캐릭터 회전/이동 세팅(선호 스타일)
-    //bUseControllerRotationPitch = false;
-    //bUseControllerRotationRoll = false;
-    //bUseControllerRotationYaw = true; // 카메라만 회전
-    //GetCharacterMovement()->bOrientRotationToMovement = true; // 이동 방향으로 회전
-    //// (선택) 부드럽게 컨트롤러 방향으로 회전하고 싶으면
-    ////GetCharacterMovement()->bUseControllerDesiredRotation = false;
-    //GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f); // 회전 속도
+
     bUseControllerRotationYaw = true;
     GetCharacterMovement()->bOrientRotationToMovement = false;
     GetCharacterMovement()->bUseControllerDesiredRotation = true; // 부드러운 회전
     GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
+
 
 
     //점프 속성
@@ -56,6 +50,18 @@ void ABaseCharacter::BeginPlay()
     GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;   // 기본은 걷기 속도
 
 
+    // … 기존 PrimaryWeapon/SecondaryWeapon 스폰 + AttachWeapon(W) 호출 …
+
+    //// 시작은 맨손(또는 원하는 시작 무기)
+    //CurrentWeaponType = EWeaponType::None;
+    //CurrentWeapon = nullptr;
+    // 만약 시작부터 A를 들게 하고 싶다면:
+    // EquipWeaponType(EWeaponType::Pistol);  // 네 enum 값 이름에 맞춰서
+
+
+
+
+
 
 
     // ── 무기 스폰 + 손 소켓에 부착 ──
@@ -63,28 +69,35 @@ void ABaseCharacter::BeginPlay()
     Params.Owner = this; // 발사체/무기에서 GetOwner()로 캐릭터 추적 가능
     Params.Instigator = this;  // 데미지 시스템에서 InstigatorController 추적 용이
 
-    if(PrimaryWeaponClass)
+    if(PistolWeaponClass)
     {
-        PrimaryWeapon = GetWorld()->SpawnActor<AWeapon>(PrimaryWeaponClass, GetActorLocation(), GetActorRotation(), Params);
+        PistolWeapon = GetWorld()->SpawnActor<AWeapon>
+            (PistolWeaponClass, GetActorLocation(), GetActorRotation(), Params);
     }
 
-    if (SecondaryWeaponClass)
+    if (RifleWeaponClass)
     {
-        SecondaryWeapon = GetWorld()->SpawnActor<AWeapon>(SecondaryWeaponClass, GetActorLocation(), GetActorRotation(), Params);
-        if (SecondaryWeapon)
+        RifleWeapon = GetWorld()->SpawnActor<AWeapon>
+            (RifleWeaponClass, GetActorLocation(), GetActorRotation(), Params);
+        if (RifleWeapon)
         {
             // 보조 무기는 처음엔 부착하지 않고 대기(원하면 Hidden 설정 가능)
-            SecondaryWeapon->SetActorHiddenInGame(true);
-            SecondaryWeapon->SetActorEnableCollision(false);
+            RifleWeapon->SetActorHiddenInGame(true);
+            RifleWeapon->SetActorEnableCollision(false);
 
         }
     }
 
-    // 기본 장착: 1번 무기
-    if (PrimaryWeapon)
+    // 시작 장착(권총) — enum까지 동기화되도록 타입 함수로 호출
+    
+    if (PistolWeapon)
     {
-        CurrentWeapon = PrimaryWeapon;
-        AttachWeapon(CurrentWeapon);
+        EquipWeaponType(EWeaponType::Pistol);
+    }
+    else
+    {
+        CurrentWeaponType = EWeaponType::None;
+        CurrentWeapon = nullptr;
     }
 
 }
@@ -125,7 +138,58 @@ void ABaseCharacter::OnRunReleased(const FInputActionValue& Value)
 
 }
 
-/* ---------- Weapon helpers ---------- */
+
+
+/* ---------- Weapon ---------- */
+
+
+void ABaseCharacter::EquipWeaponType(EWeaponType NewType)
+{
+    // 1) 전부 숨김/비활성
+    if (PistolWeapon)
+    {
+        PistolWeapon->SetActorHiddenInGame(true);
+        PistolWeapon->SetActorEnableCollision(false);
+        PistolWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+    }
+    if (RifleWeapon)
+    {
+        RifleWeapon->SetActorHiddenInGame(true);
+        RifleWeapon->SetActorEnableCollision(false);
+        RifleWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+    }
+    CurrentWeapon = nullptr;
+
+    // 2) 타입 선택 → 부착
+    if (NewType == EWeaponType::Pistol && PistolWeapon)
+    {
+        CurrentWeapon = PistolWeapon;
+        AttachWeapon(CurrentWeapon);
+    }
+    else if (NewType == EWeaponType::Rifle && RifleWeapon)
+    {
+        CurrentWeapon = RifleWeapon;
+        AttachWeapon(CurrentWeapon);
+    }
+
+
+    // 3) 현재 타입 갱신 → AnimBP에서 이 값으로 포즈 전환
+    CurrentWeaponType = NewType;
+}
+
+void ABaseCharacter::UnEquipAll()
+{
+    if (CurrentWeapon)
+    {
+        CurrentWeapon->SetActorHiddenInGame(true);
+        CurrentWeapon->SetActorEnableCollision(false);
+        CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+        CurrentWeapon = nullptr;
+
+    }
+    CurrentWeaponType = EWeaponType::None;
+}
+
 
 
 void ABaseCharacter::AttachWeapon(AWeapon* W)
@@ -158,9 +222,9 @@ void ABaseCharacter::FirePressed()
     // UFUNCTION(BlueprintCallable) virtual void Fire();
 }
 
-void ABaseCharacter::EquipPrimary()
+void ABaseCharacter::EquipPistol()
 {
-    if (!IsValid(PrimaryWeapon) || CurrentWeapon == PrimaryWeapon) return;
+    if (!IsValid(PistolWeapon) || CurrentWeapon == PistolWeapon) return;
 
     // 현재 무기 숨기고 충돌 비활성화(선택)
     if (IsValid(CurrentWeapon))
@@ -170,14 +234,14 @@ void ABaseCharacter::EquipPrimary()
         CurrentWeapon->SetActorEnableCollision(false);
         CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
     }
-    CurrentWeapon = PrimaryWeapon;
+    CurrentWeapon = PistolWeapon;
     AttachWeapon(CurrentWeapon);
 
 }
 
-void ABaseCharacter::EquipSecondary()
+void ABaseCharacter::EquipRifle()
 {
-    if (!IsValid(SecondaryWeapon) || CurrentWeapon == SecondaryWeapon) return;
+    if (!IsValid(RifleWeapon) || CurrentWeapon == RifleWeapon) return;
 
     if (IsValid(CurrentWeapon))
     {
@@ -186,7 +250,7 @@ void ABaseCharacter::EquipSecondary()
         CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
     }
 
-    CurrentWeapon = SecondaryWeapon;
+    CurrentWeapon = RifleWeapon;
     AttachWeapon(CurrentWeapon);
 }
 

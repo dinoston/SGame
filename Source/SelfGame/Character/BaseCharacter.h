@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "../Enum/WeaponTypes.h"
+
 #include "BaseCharacter.generated.h"
 
 
@@ -64,19 +66,37 @@ public:
     FName WeaponSocketName = TEXT("Weapon_Socket"); // 예: "Hand_R" 추천
 
 
+    // ───── Weapon 상태(enum) ─────
+    /** 현재 장착된 무기 타입 (AnimBP에서 이 값 읽어서 포즈 전환) */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+    EWeaponType CurrentWeaponType = EWeaponType::None;
+
+    /** 외부(픽업 등)에서 타입으로 장착 */
+    UFUNCTION(BlueprintCallable, Category = "Weapon")
+    void EquipWeaponType(EWeaponType NewType);
+
+    /** 전부 해제(맨손) */
+    UFUNCTION(BlueprintCallable, Category = "Weapon")
+    void UnEquipAll();
+
+
+
+    
+
+
     /** 1번 무기/2번 무기의 클래스(BP 지정) */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-    TSubclassOf<AWeapon> PrimaryWeaponClass;
+    TSubclassOf<AWeapon> PistolWeaponClass; // Pistol
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-    TSubclassOf<AWeapon> SecondaryWeaponClass;
+    TSubclassOf<AWeapon> RifleWeaponClass; // Rifle
 
     /** 실제 스폰된 무기 인스턴스들 */
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon")
-    AWeapon* PrimaryWeapon = nullptr;
+    AWeapon* PistolWeapon = nullptr;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon")
-    AWeapon* SecondaryWeapon = nullptr;
+    AWeapon* RifleWeapon = nullptr;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
     AWeapon* CurrentWeapon = nullptr;
@@ -85,9 +105,9 @@ public:
     UFUNCTION(BlueprintCallable) 
     void FirePressed();
     UFUNCTION(BlueprintCallable) 
-    void EquipPrimary();
+    void EquipPistol(); // 내부적으로 EquipWeaponType(EWeaponType::Pistol)
     UFUNCTION(BlueprintCallable) 
-    void EquipSecondary();
+    void EquipRifle(); // 내부적으로 EquipWeaponType(EWeaponType::Rifle)
 
 
     //테스트로 0키로 50데미지//
