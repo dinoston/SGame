@@ -196,19 +196,31 @@ void ABaseCharacter::AttachWeapon(AWeapon* W)
 {
     if (!IsValid(W) || !GetMesh()) return;
 
-    // 오너/인스티게이터 지정(확실하게)
     W->SetOwner(this);
     W->SetInstigator(this);
 
-    // 소켓 이름이 실제 존재하는지 체크 후 부착
-    const bool bHasSocket = GetMesh()->DoesSocketExist(WeaponSocketName);
-    const FName SocketToUse = bHasSocket ? WeaponSocketName : NAME_None;
+    // 소켓 존재 확인
+    if (!GetMesh()->DoesSocketExist(WeaponSocketName))
+    {
+        UE_LOG(LogTemp, Error, TEXT("Socket '%s' not found on %s"),
+            *WeaponSocketName.ToString(), *GetNameSafe(GetMesh()));
+        return;
+    }
 
-    W->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketToUse);
+    // ✨핵심: 소켓로 '스냅'해서 부착 (스폰 위치/오프셋 무시)
+    W->AttachToComponent(
+        GetMesh(),
+        FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+        WeaponSocketName              // <- 하드코딩 "WeaponSocket" 금지
+    );
 
-    // 보이기/충돌 활성화(장착 상태)
+    // 들고 있을 땐 충돌/물리 OFF
     W->SetActorHiddenInGame(false);
-    W->SetActorEnableCollision(true);
+    W->SetActorEnableCollision(false);
+    if (auto* Prim = Cast<UPrimitiveComponent>(W->GetRootComponent()))
+    {
+        Prim->SetSimulatePhysics(false);
+    }
 }
 
 void ABaseCharacter::FirePressed()

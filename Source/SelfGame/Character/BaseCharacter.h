@@ -63,7 +63,7 @@ public:
     /** ───── Weapon ───── */
     /** 캐릭터 손의 무기 소켓 이름 (스켈레톤에 동일 이름 소켓을 만들어 두세요) */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-    FName WeaponSocketName = TEXT("Weapon_Socket"); // 예: "Hand_R" 추천
+    FName WeaponSocketName = TEXT("WeaponSocket"); // 예: "Hand_R" 추천
 
 
     // ───── Weapon 상태(enum) ─────
