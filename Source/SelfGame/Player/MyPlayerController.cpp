@@ -5,6 +5,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/Character.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "../Character/BaseCharacter.h"
 
 AMyPlayerController::AMyPlayerController(const FObjectInitializer& ObjectInitializer) 
 	: Super(ObjectInitializer)
@@ -60,6 +61,10 @@ void AMyPlayerController::SetupInputComponent()
 void AMyPlayerController::Input_Attack(const FInputActionValue& InputValue)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Cyan, TEXT("Attack"));
+	if (ABaseCharacter* C = GetPawn<ABaseCharacter>())
+	{
+		C->FirePressed(); // ★ 실제 발사
+	}
 
 }
 

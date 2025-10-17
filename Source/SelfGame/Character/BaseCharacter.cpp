@@ -226,6 +226,7 @@ void ABaseCharacter::AttachWeapon(AWeapon* W)
 void ABaseCharacter::FirePressed()
 {
     if (!IsValid(CurrentWeapon)) return;
+    CurrentWeapon->Fire(); // ★ 발사
 
     // AWeapon에 Fire가 UFUNCTION(BlueprintCallable) 또는 C++ 메서드로 있다고 가정
     // CurrentWeapon->Fire();

@@ -1,9 +1,13 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Weapon.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
+#include "Engine/World.h"
+#include "DrawDebugHelpers.h"
+#include "GameFramework/DamageType.h"
 
 
 // Sets default values
@@ -20,7 +24,8 @@ AWeapon::AWeapon()
 	// Mesh->SetRelativeRotation(FRotator(0,90,0)); // 기본 회전 미리 줄 수도 있음
 }
 
-// Called when the game starts or when spawned
+
+
 void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
@@ -29,14 +34,168 @@ void AWeapon::BeginPlay()
 	
 }
 
-// Called every frame
 void AWeapon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 }
 
+
+// ===== 내부 유틸 =====
+
+bool AWeapon::CanFireNow() const
+{
+	// FireRate: 초당 발사수 → 최소 간격
+	const double MinInterval = (FireRate > 0.f) ? (1.f / FireRate) : 0.0;
+	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+
+	const bool CooldownOK = (MinInterval <= 0.0) || (Now - LastFireTime >= MinInterval);
+	const bool AmmoOK = (Ammo < 0) || (Ammo > 0);
+	return CooldownOK && AmmoOK;
+}
+
+FTransform AWeapon::GetMuzzleTransform() const
+{
+	if (Mesh && Mesh->DoesSocketExist(MuzzleSocketName))
+	{
+		return Mesh->GetSocketTransform(MuzzleSocketName, RTS_World);
+	}
+
+	// 소켓이 없으면 메시 기준 폴백
+	const FRotator Rot = Mesh ? Mesh->GetComponentRotation() : FRotator::ZeroRotator;
+	const FVector  Loc = Mesh ? Mesh->GetComponentLocation() : FVector::ZeroVector;
+	return FTransform(Rot, Loc);
+}
+
+void AWeapon::PlayMuzzleFX(const FTransform& MuzzleXf) const
+{
+    // --- 머즐 파티클 ---
+    if (MuzzleFX)
+    {
+        if (Mesh && Mesh->DoesSocketExist(MuzzleSocketName))
+        {
+            UGameplayStatics::SpawnEmitterAttached(
+                MuzzleFX,
+                Mesh,
+                MuzzleSocketName,
+                FVector::ZeroVector,
+                FRotator::ZeroRotator,
+                EAttachLocation::SnapToTarget,
+                true // bAutoDestroy
+            );
+        }
+        else
+        {
+            UGameplayStatics::SpawnEmitterAtLocation(
+                GetWorld(),
+                MuzzleFX,
+                MuzzleXf
+            );
+        }
+    }
+
+    // --- 머즐 사운드 ---
+    if (FireSound)
+    {
+        if (Mesh && Mesh->DoesSocketExist(MuzzleSocketName))
+        {
+            UGameplayStatics::SpawnSoundAttached(FireSound, Mesh, MuzzleSocketName);
+        }
+        else
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, FireSound, MuzzleXf.GetLocation());
+        }
+    }
+}
+
+void AWeapon::PlayImpactFX(const FHitResult& Hit) const
+{
+    if (ImpactFX)
+    {
+        UGameplayStatics::SpawnEmitterAtLocation(
+            GetWorld(),
+            ImpactFX,
+            Hit.ImpactPoint,
+            Hit.ImpactNormal.Rotation()
+        );
+    }
+
+    if (ImpactSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, Hit.ImpactPoint);
+    }
+}
+
 void AWeapon::Fire()
 {
+    if (!GetWorld() || !CanFireNow())
+        return;
+
+    const FTransform MuzzleXf = GetMuzzleTransform();
+    const FVector Start = MuzzleXf.GetLocation();
+    const FVector Dir = MuzzleXf.GetRotation().Vector();
+
+    // 탄약 소모
+    if (Ammo > 0) --Ammo;
+
+    // 머즐 FX/사운드
+    PlayMuzzleFX(MuzzleXf);
+
+    // 투사체 모드
+    if (ProjectileClass)
+    {
+        FActorSpawnParameters Params;
+        Params.Owner = this;
+        Params.Instigator = OwnerChar; // 선택: 데미지 instigator 연동
+        Params.SpawnCollisionHandlingOverride =
+            ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+        GetWorld()->SpawnActor<AActor>(ProjectileClass, MuzzleXf, Params);
+    }
+    // 히트스캔 모드
+    else
+    {
+        const FVector End = Start + Dir * Range;
+
+        FHitResult Hit;
+        FCollisionQueryParams QParams(SCENE_QUERY_STAT(WeaponTrace), /*bTraceComplex*/ true, this);
+        if (OwnerChar) QParams.AddIgnoredActor(OwnerChar);
+        QParams.AddIgnoredActor(this);
+
+        if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, QParams))
+        {
+            if (AActor* Target = Hit.GetActor())
+            {
+                // ★ 여기서 타입 통일 (TSubclassOf<UDamageType>)
+                TSubclassOf<UDamageType> DamageTypeClass = DamageType;
+                if (!DamageTypeClass)
+                    DamageTypeClass = UDamageType::StaticClass();
+
+                UGameplayStatics::ApplyPointDamage(
+                    Target,                               // DamagedActor
+                    Damage,                               // BaseDamage
+                    Dir,                                  // HitFromDirection
+                    Hit,                                  // HitInfo
+                    OwnerChar ? OwnerChar->GetController() : nullptr, // Instigator
+                    this,                                 // DamageCauser
+                    DamageTypeClass                       // DamageTypeClass
+                );
+            }
+
+            // 임팩트 FX/사운드
+            PlayImpactFX(Hit);
+        }
+        // 필요 시 디버그
+        // DrawDebugLine(GetWorld(), Start, Hit.bBlockingHit ? Hit.ImpactPoint : End, FColor::Red, false, 1.0f, 0, 1.5f);
+    }
+
+    LastFireTime = GetWorld()->GetTimeSeconds();
 }
+
+
+
+
+
+
+
 
