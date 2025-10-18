@@ -1,4 +1,4 @@
-
+ï»¿
 
 #include "Weapon.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -8,6 +8,9 @@
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/DamageType.h"
+
+
+constexpr ECollisionChannel BULLET_CH = ECC_GameTraceChannel1; // Project Settings â†’ Collisionì—ì„œ ë§Œë“  TraceChannel(Bullet)
 
 
 // Sets default values
@@ -20,8 +23,8 @@ AWeapon::AWeapon()
 	SetRootComponent(Root);
 
 	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
-	Mesh->SetupAttachment(Root);              // ¡ç ·çÆ®ÀÇ ÀÚ½ÄÀ¸·Î ºÎÂø
-	// Mesh->SetRelativeRotation(FRotator(0,90,0)); // ±âº» È¸Àü ¹Ì¸® ÁÙ ¼öµµ ÀÖÀ½
+	Mesh->SetupAttachment(Root);              // â† ë£¨íŠ¸ì˜ ìì‹ìœ¼ë¡œ ë¶€ì°©
+	// Mesh->SetRelativeRotation(FRotator(0,90,0)); // ê¸°ë³¸ íšŒì „ ë¯¸ë¦¬ ì¤„ ìˆ˜ë„ ìˆìŒ
 }
 
 
@@ -41,11 +44,11 @@ void AWeapon::Tick(float DeltaTime)
 }
 
 
-// ===== ³»ºÎ À¯Æ¿ =====
+// ===== ë‚´ë¶€ ìœ í‹¸ =====
 
 bool AWeapon::CanFireNow() const
 {
-	// FireRate: ÃÊ´ç ¹ß»ç¼ö ¡æ ÃÖ¼Ò °£°İ
+	// FireRate: ì´ˆë‹¹ ë°œì‚¬ìˆ˜ â†’ ìµœì†Œ ê°„ê²©
 	const double MinInterval = (FireRate > 0.f) ? (1.f / FireRate) : 0.0;
 	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 
@@ -61,7 +64,7 @@ FTransform AWeapon::GetMuzzleTransform() const
 		return Mesh->GetSocketTransform(MuzzleSocketName, RTS_World);
 	}
 
-	// ¼ÒÄÏÀÌ ¾øÀ¸¸é ¸Ş½Ã ±âÁØ Æú¹é
+	// ì†Œì¼“ì´ ì—†ìœ¼ë©´ ë©”ì‹œ ê¸°ì¤€ í´ë°±
 	const FRotator Rot = Mesh ? Mesh->GetComponentRotation() : FRotator::ZeroRotator;
 	const FVector  Loc = Mesh ? Mesh->GetComponentLocation() : FVector::ZeroVector;
 	return FTransform(Rot, Loc);
@@ -69,42 +72,45 @@ FTransform AWeapon::GetMuzzleTransform() const
 
 void AWeapon::PlayMuzzleFX(const FTransform& MuzzleXf) const
 {
-    // --- ¸ÓÁñ ÆÄÆ¼Å¬ ---
-    if (MuzzleFX)
+    // 1) ë¨¼ì € ë„ ì²´í¬ í›„ ë°”ë¡œ ë¦¬í„´
+    if (!MuzzleFX)
     {
-        if (Mesh && Mesh->DoesSocketExist(MuzzleSocketName))
-        {
-            UGameplayStatics::SpawnEmitterAttached(
-                MuzzleFX,
-                Mesh,
-                MuzzleSocketName,
-                FVector::ZeroVector,
-                FRotator::ZeroRotator,
-                EAttachLocation::SnapToTarget,
-                true // bAutoDestroy
-            );
-        }
-        else
-        {
-            UGameplayStatics::SpawnEmitterAtLocation(
-                GetWorld(),
-                MuzzleFX,
-                MuzzleXf
-            );
-        }
+        UE_LOG(LogTemp, Warning, TEXT("[%s] MuzzleFX not set"), *GetName());
+        return;
     }
 
-    // --- ¸ÓÁñ »ç¿îµå ---
+    // 2) ì†Œì¼“ì´ ìˆìœ¼ë©´ ë¶™ì—¬ì„œ, ì—†ìœ¼ë©´ ì›”ë“œ ì¢Œí‘œë¡œ
+    if (Mesh && Mesh->DoesSocketExist(MuzzleSocketName))
+    {
+        UGameplayStatics::SpawnEmitterAttached(
+            MuzzleFX,
+            Mesh,
+            MuzzleSocketName,
+            FVector::ZeroVector,
+            FRotator::ZeroRotator,
+            EAttachLocation::SnapToTarget,
+            true // bAutoDestroy
+        );
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[%s] Muzzle socket '%s' not found â€“ spawning at world loc"),
+            *GetName(), *MuzzleSocketName.ToString());
+
+        UGameplayStatics::SpawnEmitterAtLocation(
+            GetWorld(),
+            MuzzleFX,
+            MuzzleXf
+        );
+    }
+
+    // ì‚¬ìš´ë“œ
     if (FireSound)
     {
         if (Mesh && Mesh->DoesSocketExist(MuzzleSocketName))
-        {
             UGameplayStatics::SpawnSoundAttached(FireSound, Mesh, MuzzleSocketName);
-        }
         else
-        {
             UGameplayStatics::PlaySoundAtLocation(this, FireSound, MuzzleXf.GetLocation());
-        }
     }
 }
 
@@ -135,58 +141,63 @@ void AWeapon::Fire()
     const FVector Start = MuzzleXf.GetLocation();
     const FVector Dir = MuzzleXf.GetRotation().Vector();
 
-    // Åº¾à ¼Ò¸ğ
+    // íƒ„ì•½ ì†Œëª¨
     if (Ammo > 0) --Ammo;
 
-    // ¸ÓÁñ FX/»ç¿îµå
+    // ë¨¸ì¦ FX/ì‚¬ìš´ë“œ
     PlayMuzzleFX(MuzzleXf);
 
-    // Åõ»çÃ¼ ¸ğµå
+    // íˆ¬ì‚¬ì²´ ëª¨ë“œ
     if (ProjectileClass)
     {
         FActorSpawnParameters Params;
         Params.Owner = this;
-        Params.Instigator = OwnerChar; // ¼±ÅÃ: µ¥¹ÌÁö instigator ¿¬µ¿
+        Params.Instigator = OwnerChar; // ì„ íƒ: ë°ë¯¸ì§€ instigator ì—°ë™
         Params.SpawnCollisionHandlingOverride =
             ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
         GetWorld()->SpawnActor<AActor>(ProjectileClass, MuzzleXf, Params);
     }
-    // È÷Æ®½ºÄµ ¸ğµå
+    // íˆíŠ¸ìŠ¤ìº” ëª¨ë“œ
     else
     {
         const FVector End = Start + Dir * Range;
 
         FHitResult Hit;
+
+        // â–¼ ë””ë²„ê·¸/ë¨¸í‹°ë¦¬ì–¼ ì˜µì…˜ ì¶”ê°€
         FCollisionQueryParams QParams(SCENE_QUERY_STAT(WeaponTrace), /*bTraceComplex*/ true, this);
+        QParams.bReturnPhysicalMaterial = true;      // í‘œë©´ë³„ FX ì“¸ ë•Œ ìœ ìš©
+        QParams.TraceTag = TEXT("WeaponTrace");      // ë””ë²„ê·¸ íƒœê·¸
+
         if (OwnerChar) QParams.AddIgnoredActor(OwnerChar);
         QParams.AddIgnoredActor(this);
 
-        if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, QParams))
+        // â–¼ ì»¤ìŠ¤í…€ íŠ¸ë ˆì´ìŠ¤ ì±„ë„ ì‚¬ìš© (Bullet)
+        if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, BULLET_CH, QParams))
         {
+            // (ì„ íƒ) ë””ë²„ê·¸ ë¼ì¸
+            DrawDebugLine(GetWorld(), Start, Hit.ImpactPoint, FColor::Red, false, 1.0f, 0, 1.5f);
+
             if (AActor* Target = Hit.GetActor())
             {
-                // ¡Ú ¿©±â¼­ Å¸ÀÔ ÅëÀÏ (TSubclassOf<UDamageType>)
                 TSubclassOf<UDamageType> DamageTypeClass = DamageType;
-                if (!DamageTypeClass)
-                    DamageTypeClass = UDamageType::StaticClass();
+                if (!DamageTypeClass) DamageTypeClass = UDamageType::StaticClass();
 
                 UGameplayStatics::ApplyPointDamage(
-                    Target,                               // DamagedActor
-                    Damage,                               // BaseDamage
-                    Dir,                                  // HitFromDirection
-                    Hit,                                  // HitInfo
-                    OwnerChar ? OwnerChar->GetController() : nullptr, // Instigator
-                    this,                                 // DamageCauser
-                    DamageTypeClass                       // DamageTypeClass
-                );
+                    Target, Damage, Dir, Hit,
+                    OwnerChar ? OwnerChar->GetController() : nullptr,
+                    this, DamageTypeClass);
             }
 
-            // ÀÓÆÑÆ® FX/»ç¿îµå
+            // ì„íŒ©íŠ¸ FX/ì‚¬ìš´ë“œ
             PlayImpactFX(Hit);
         }
-        // ÇÊ¿ä ½Ã µğ¹ö±×
-        // DrawDebugLine(GetWorld(), Start, Hit.bBlockingHit ? Hit.ImpactPoint : End, FColor::Red, false, 1.0f, 0, 1.5f);
+        else
+        {
+            // (ì„ íƒ) ë¯¸ìŠ¤ìƒ· ë””ë²„ê·¸ ë¼ì¸
+            DrawDebugLine(GetWorld(), Start, End, FColor::Silver, false, 1.0f, 0, 1.5f);
+        }
     }
 
     LastFireTime = GetWorld()->GetTimeSeconds();
