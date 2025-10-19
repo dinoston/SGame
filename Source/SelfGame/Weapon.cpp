@@ -8,6 +8,7 @@
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/DamageType.h"
+#include "Engine/Engine.h"
 
 
 constexpr ECollisionChannel BULLET_CH = ECC_GameTraceChannel1; // Project Settings → Collision에서 만든 TraceChannel(Bullet)
@@ -55,6 +56,17 @@ bool AWeapon::CanFireNow() const
 	const bool CooldownOK = (MinInterval <= 0.0) || (Now - LastFireTime >= MinInterval);
 	const bool AmmoOK = (Ammo < 0) || (Ammo > 0);
 	return CooldownOK && AmmoOK;
+}
+
+int32 AWeapon::AddAmmo(int32 Amount)
+{
+    // 무한 탄(-1)은 보급 의미 없음
+    if (Ammo < 0) return 0;
+
+    const int32 Old = Ammo;
+    Ammo = FMath::Clamp(Ammo + Amount, 0, MaxAmmo);
+
+    return Ammo - Old;
 }
 
 FTransform AWeapon::GetMuzzleTransform() const
@@ -137,12 +149,30 @@ void AWeapon::Fire()
     if (!GetWorld() || !CanFireNow())
         return;
 
+    // ① 0발이면 발사 차단 + 안내
+    if (Ammo == 0) {
+        if (GEngine) {
+            GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, TEXT("No ammo!"));
+        }
+        return;
+    }
+
     const FTransform MuzzleXf = GetMuzzleTransform();
     const FVector Start = MuzzleXf.GetLocation();
     const FVector Dir = MuzzleXf.GetRotation().Vector();
 
-    // 탄약 소모
-    if (Ammo > 0) --Ammo;
+
+    // 탄약 소모(무한탄 예외: Ammo<0 는 소모 안 함)
+    if (Ammo > 0) {
+        Ammo = FMath::Max(Ammo - 1, 0);  // 음수 방지
+    }
+
+    // ② 남은 탄 화면 표기
+    if (GEngine) {
+        GEngine->AddOnScreenDebugMessage(
+            -1, 1.0f, FColor::Green,
+            FString::Printf(TEXT("Ammo: %d / %d"), Ammo, MaxAmmo));
+    }
 
     // 머즐 FX/사운드
     PlayMuzzleFX(MuzzleXf);

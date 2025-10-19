@@ -60,7 +60,7 @@ void AMyPlayerController::SetupInputComponent()
 
 void AMyPlayerController::Input_Attack(const FInputActionValue& InputValue)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Cyan, TEXT("Attack"));
+	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Cyan, TEXT("Attack"));
 	if (ABaseCharacter* C = GetPawn<ABaseCharacter>())
 	{
 		C->FirePressed(); // ★ 실제 발사

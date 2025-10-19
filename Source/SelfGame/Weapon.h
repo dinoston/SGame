@@ -49,9 +49,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
 	float FireRate = 8.f;
 
-	// 탄약(−1이면 무한)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
-	int32 Ammo = -1;
+	
 
 	/** 대미지 타입(선택) */
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
@@ -91,6 +89,19 @@ public:
 	/** 메시/오너 Getter (필요시 사용) */
 	FORCEINLINE USkeletalMeshComponent* GetMesh() const { return Mesh; }
 	
+
+	//총알//
+	//Ammo 변수는 이미 존재합니다. 여기에 MaxAmmo와 AddAmmo만 추가합니다. (기존 Ammo 정의는 그대로 사용하되 초기값만 30으로 맞추면 됩니다.)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
+	int32 MaxAmmo = 70;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
+	int32 Ammo = 30;
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
+	int32 AddAmmo(int32 Amount);
+
 
 private:
 	/** 연사 쿨다운용 */
