@@ -267,6 +267,43 @@ void ABaseCharacter::EquipRifle()
     AttachWeapon(CurrentWeapon);
 }
 
+float ABaseCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+    if (bIsDead || !HealthComp) return 0.f;
+
+    const float Dealt = FMath::Max(0.f, DamageAmount);
+
+    // 이전 HP 저장
+    const float OldHP = HealthComp->CurrentHP;
+
+    // 네 HealthComponent에 위임 (이 안에서 Clamp/브로드캐스트 하도록 구현돼 있다고 가정)
+    HealthComp->TakeDamage(Dealt);
+
+    const float NewHP = HealthComp->CurrentHP;
+
+    // (선택) 화면 디버그
+    if (GEngine)
+    {
+        GEngine->AddOnScreenDebugMessage(
+            /*Key*/-1, /*Time*/1.0f, FColor::Yellow,
+            FString::Printf(TEXT("%s took %.1f dmg (HP: %.1f)"),
+                *GetName(), Dealt, NewHP));
+    }
+
+    // BP 이벤트(히트 리액션/피격 사운드/UI 갱신에 사용)
+    BP_OnDamaged(NewHP, NewHP - OldHP /*음수*/, DamageCauser);
+
+    if (NewHP <= 0.f && !bIsDead)
+    {
+        Die(DamageCauser);
+    }
+
+    // 부모 처리값과 비교해서 돌려주고 싶다면:
+    // const float SuperAmt = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+    // return FMath::Max(Dealt, SuperAmt);
+    return Dealt;
+}
+
 void ABaseCharacter::TestTakeDamage()
 {
     if (!HealthComp) return;
@@ -280,4 +317,47 @@ void ABaseCharacter::TestTakeDamage()
     }
 
 }
+
+void ABaseCharacter::Die(AActor* Killer)
+{
+    if (bIsDead) return;
+    bIsDead = true;
+
+    // 이동/입력 정지
+    if (UCharacterMovementComponent* Move = GetCharacterMovement())
+    {
+        Move->StopMovementImmediately();
+        Move->DisableMovement();
+    }
+
+    // 콜리전 비활성화
+    if (UCapsuleComponent* Cap = GetCapsuleComponent())
+    {
+        Cap->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
+    // 컨트롤러 분리(플레이어/AI 공통)
+    DetachFromControllerPendingDestroy();
+
+    // (선택) 래그돌
+    if (USkeletalMeshComponent* M = GetMesh())
+    {
+        M->SetCollisionProfileName(TEXT("Ragdoll"));
+        M->SetSimulatePhysics(true);
+    }
+
+    // (선택) 화면/로그
+    if (GEngine)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red,
+            FString::Printf(TEXT("%s died"), *GetName()));
+    }
+
+    // BP 사망 연출 트리거
+    BP_OnDeath(Killer);
+
+    // (선택) 일정 시간 뒤 제거
+    SetLifeSpan(8.f);
+}
+
 

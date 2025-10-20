@@ -76,6 +76,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "FX")
 	USoundBase* ImpactSound = nullptr;
 
+	// 사운드 섹션에 추가
+	UPROPERTY(EditDefaultsOnly, Category = "FX|Sound")
+	USoundBase* EmptySound = nullptr;   // 탄없음(먹통) 사운드
+
 	/** ProjectileClass가 있으면 투사체, 없으면 히트스캔 */
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	TSubclassOf<AActor> ProjectileClass;

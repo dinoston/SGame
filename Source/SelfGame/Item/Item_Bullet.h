@@ -24,6 +24,10 @@ public:
 	//먹는 소리(에디터에서 사운드 큐/사운드 지정)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup")
 	USoundBase* PickupSound = nullptr;
+
+
+
+
 private:
 	virtual void ApplyTo(class ABaseCharacter* Character) override;
 

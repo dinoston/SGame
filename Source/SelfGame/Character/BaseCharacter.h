@@ -110,13 +110,38 @@ public:
     void EquipRifle(); // 내부적으로 EquipWeaponType(EWeaponType::Rifle)
 
 
+    /* ===== Health / Damage ===== */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+    bool bIsDead = false;
+
+    // ApplyDamage / ApplyPointDamage 가 호출되면 여기로 옴
+    virtual float TakeDamage(float DamageAmount,
+            struct FDamageEvent const& DamageEvent,
+            class AController* EventInstigator,
+            class AActor* DamageCauser) override;
+
+
     //테스트로 0키로 50데미지//
     UFUNCTION(BlueprintCallable)
     void TestTakeDamage();
+
+protected:
+    UFUNCTION()
+    virtual void Die(AActor* Killer);
+
+    // (선택) 블루프린트에서 맞을 때/죽을 때 연출 연결
+    UFUNCTION(BlueprintImplementableEvent, Category = "Health")
+    void BP_OnDamaged(float NewHP, float Delta, AActor* Causer);
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Health")
+    void BP_OnDeath(AActor* Killer);
+
 
 
 private:
     /** 무기를 이 캐릭터 손 소켓에 부착 + 오너 지정 */
     void AttachWeapon(AWeapon* W);
+
+
 
 };

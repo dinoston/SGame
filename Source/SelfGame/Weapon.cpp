@@ -149,6 +149,21 @@ void AWeapon::Fire()
     if (!GetWorld() || !CanFireNow())
         return;
 
+    // ★ 탄약 0이면 딱-딱 사운드만 재생하고 종료
+    if (Ammo == 0)
+    {
+        // 머즐 소켓에서 나게 하거나, 위치 없으면 액터 위치에서
+        if (EmptySound)
+        {
+            if (Mesh && Mesh->DoesSocketExist(MuzzleSocketName))
+                UGameplayStatics::SpawnSoundAttached(EmptySound, Mesh, MuzzleSocketName);
+            else
+                UGameplayStatics::PlaySoundAtLocation(this, EmptySound,
+                    Mesh ? Mesh->GetComponentLocation() : GetActorLocation());
+        }
+        return;
+    }
+
     // ① 0발이면 발사 차단 + 안내
     if (Ammo == 0) {
         if (GEngine) {
