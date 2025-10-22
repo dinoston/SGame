@@ -12,6 +12,7 @@ class UHealthComponent;
 class AWeapon;
 class USpringArmComponent;
 class UCameraComponent;
+class UUserWidget;
 
 
 UCLASS()
@@ -137,6 +138,12 @@ protected:
     void BP_OnDeath(AActor* Killer);
 
 
+
+    //UI*********************************
+    UPROPERTY(EditAnywhere, Category = "UI")
+    TSubclassOf<UUserWidget> CharacterUI;
+    
+    TObjectPtr<UUserWidget> UIWidget;
 
 private:
     /** 무기를 이 캐릭터 손 소켓에 부착 + 오너 지정 */

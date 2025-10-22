@@ -8,7 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
-
+#include "Blueprint/UserWidget.h"
 
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -59,7 +59,14 @@ void ABaseCharacter::BeginPlay()
     // EquipWeaponType(EWeaponType::Pistol);  // 네 enum 값 이름에 맞춰서
 
 
-
+    if (CharacterUI)
+    {
+        UIWidget = CreateWidget<UUserWidget>(GetWorld(), CharacterUI);
+        if (UIWidget)
+        {
+            UIWidget->AddToViewport();
+        }
+    }
 
 
 
