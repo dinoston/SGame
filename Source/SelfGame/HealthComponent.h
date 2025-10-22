@@ -20,7 +20,11 @@ protected:
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
-    float MaxHP = 100.f;
+    float MaxHP = 300.f;
+
+    // ★ 시작 체력 200 (BeginPlay에서 Clamp 후 CurrentHP로 세팅)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+    float StartHP = 200.f;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
     float CurrentHP = 0.f;
@@ -29,6 +33,11 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "Health")
     FOnDeath OnDeath;
 
+    /** 데미지 적용(양수만) */
     UFUNCTION(BlueprintCallable, Category = "Health")
     void TakeDamage(float Amount);
+
+    /** ★ 회복 추가(양수만). 실제 회복된 양을 반환 */
+    UFUNCTION(BlueprintCallable, Category = "Health")
+    float Heal(float Amount);
 };
