@@ -141,8 +141,9 @@ protected:
 
     //UI*********************************
     UPROPERTY(EditAnywhere, Category = "UI")
-    TSubclassOf<UUserWidget> CharacterUI;
+    TSubclassOf<UUserWidget> CharacterUI = nullptr;
     
+    UPROPERTY()
     TObjectPtr<UUserWidget> UIWidget;
 
 private:

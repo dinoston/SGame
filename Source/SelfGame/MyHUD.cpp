@@ -1,14 +1,24 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "MyHUD.h"
+#include "Blueprint/UserWidget.h"
+#include "GameFramework/PlayerController.h"
 
-void AMyHUD::DrawHUD()
+void AMyHUD::BeginPlay()
 {
-	Super::DrawHUD();
-    // 예: 좌상단에 간단 텍스트
-    if (Canvas)
+    Super::BeginPlay();
+
+    if (APlayerController* PC = GetOwningPlayerController())
     {
-        DrawText(TEXT("MyHUD"), FLinearColor::White, 20.f, 20.f, nullptr, 1.2f);
+        if (RootUIClass)
+        {
+            RootUI = CreateWidget<UUserWidget>(PC, RootUIClass);
+            if (RootUI)
+            {
+                RootUI->AddToViewport();
+
+              
+            }
+        }
     }
 }

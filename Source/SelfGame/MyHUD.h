@@ -13,7 +13,15 @@ UCLASS()
 class SELFGAME_API AMyHUD : public AHUD
 {
 	GENERATED_BODY()
-	
+
+
 public:
-	virtual void DrawHUD() override;
+    virtual void BeginPlay() override;
+
+protected:
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<UUserWidget> RootUIClass;   
+
+    UPROPERTY() 
+    TObjectPtr<UUserWidget> RootUI; 
 };
