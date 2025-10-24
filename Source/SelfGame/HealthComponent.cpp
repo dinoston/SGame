@@ -12,6 +12,9 @@ void UHealthComponent::BeginPlay()
     // ★ 시작 체력을 MaxHP 범위로 클램프해서 적용
     CurrentHP = FMath::Clamp(StartHP, 0.f, MaxHP);
 
+    // ★ 추가: 초기 표시용 알림
+    OnHealthRatioChanged.Broadcast(GetHealthRatio());
+
     // (선택) 시작값 화면에 한번 표시하고 싶으면 주석 해제
     // if (GEngine)
     // {
@@ -40,6 +43,9 @@ void UHealthComponent::TakeDamage(float Amount)
                 ActuallyDealt, CurrentHP, MaxHP));
     }
 
+    // ★ 추가: 변경 알림
+    OnHealthRatioChanged.Broadcast(GetHealthRatio());
+
     if (CurrentHP <= 0.f)
     {
         OnDeath.Broadcast();
@@ -66,6 +72,9 @@ float UHealthComponent::Heal(float Amount)
             FString::Printf(TEXT("+%.0f HP  (%.0f / %.0f)"),
                 ActuallyHealed, CurrentHP, MaxHP));
     }
+
+    // ★ 추가: 변경 알림
+    OnHealthRatioChanged.Broadcast(GetHealthRatio());
 
     return ActuallyHealed;
 }

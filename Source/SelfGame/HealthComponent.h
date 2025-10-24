@@ -7,6 +7,10 @@
 /** 필요시 BP에서 바인딩할 수 있도록 남겨둠(원치 않으면 주석 처리해도 됨) */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
 
+// ★ 추가: 체력 비율 변경 알림
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthRatioChanged, float, NewRatio);
+
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class SELFGAME_API UHealthComponent : public UActorComponent
 {
@@ -32,6 +36,16 @@ public:
     /** 사망 이벤트(원하면 BP에서 연결) */
     UPROPERTY(BlueprintAssignable, Category = "Health")
     FOnDeath OnDeath;
+
+
+    // ★ 추가: UI가 바인딩할 델리게이트
+    UPROPERTY(BlueprintAssignable, Category = "Health")
+    FOnHealthRatioChanged OnHealthRatioChanged;
+
+    // ★ 추가: 0~1 비율 Getter (BP에서도 사용 가능)
+    UFUNCTION(BlueprintPure, Category = "Health")
+    float GetHealthRatio() const { return (MaxHP > 0.f) ? (CurrentHP / MaxHP) : 0.f; }
+
 
     /** 데미지 적용(양수만) */
     UFUNCTION(BlueprintCallable, Category = "Health")

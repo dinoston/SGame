@@ -2,6 +2,7 @@
 
 #include "MyHUD.h"
 #include "Blueprint/UserWidget.h"
+#include "UI/WBP_UI.h"
 #include "GameFramework/PlayerController.h"
 
 void AMyHUD::BeginPlay()
@@ -17,6 +18,9 @@ void AMyHUD::BeginPlay()
             {
                 RootUI->AddToViewport();
 
+                if (UWBP_UI* UI = Cast<UWBP_UI>(RootUI))
+                    if (APawn* P = PC->GetPawn())
+                        UI->InitFromPawn(P);   // ¡ç ¿©±â!
               
             }
         }
