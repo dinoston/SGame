@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "../Enum/WeaponTypes.h"
-
 #include "BaseCharacter.generated.h"
 
 
@@ -13,6 +12,9 @@ class AWeapon;
 class USpringArmComponent;
 class UCameraComponent;
 class UUserWidget;
+
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCurrentWeaponChanged, class AWeapon*, NewWeapon);
 
 
 UCLASS()
@@ -30,6 +32,7 @@ public:
 
     virtual void Tick(float DeltaTime) override;
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
 
     //--------------Components-------------//
     /** 체력  */
@@ -125,6 +128,11 @@ public:
     //테스트로 0키로 50데미지//
     UFUNCTION(BlueprintCallable)
     void TestTakeDamage();
+
+
+    //“무기 바뀜” 델리게이트//
+    UPROPERTY(BlueprintAssignable, Category = "Weapon")
+    FOnCurrentWeaponChanged OnCurrentWeaponChanged;
 
 protected:
     UFUNCTION()

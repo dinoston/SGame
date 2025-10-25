@@ -3,15 +3,25 @@
 
 #include "WBP_UI.h"
 #include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
+
 #include "Components/Image.h"
 #include "GameFramework/Pawn.h"
 #include "../HealthComponent.h"
+#include "../Weapon.h" // ★ 무기 포함
+#include "../Character/BaseCharacter.h"
+
+
 
 
 void UWBP_UI::InitFromPawn(APawn* Pawn)
 {
     // 기존 바인딩 해제
     UnbindFromHealth();
+    UnbindFromWeapon();
+    UnbindFromCharacter();
+
+
 
     if (!Pawn) return;
 
@@ -19,6 +29,21 @@ void UWBP_UI::InitFromPawn(APawn* Pawn)
     {
         BindToHealth(HC);
         ApplyRatioToUI(HC->GetHealthRatio()); // 초기값 반영
+    }
+
+    if (auto* C = Cast<ABaseCharacter>(Pawn))
+    {
+        BindToCharacter(C); // 무기 교체 이벤트 구독
+
+        if (C->CurrentWeapon)                 // 현재 무기 있으면 즉시 표시
+        {
+            BindToWeapon(C->CurrentWeapon);
+            ApplyAmmoToUI(C->CurrentWeapon->GetAmmo(), C->CurrentWeapon->GetMaxAmmo());
+        }
+        else if (Text_Ammo)
+        {
+            Text_Ammo->SetText(FText::FromString(TEXT("-- / --")));
+        }
     }
 }
 
@@ -57,8 +82,73 @@ void UWBP_UI::ApplyRatioToUI(float Ratio)
     // 필요하면 조준점 크기/알파를 Ratio에 따라 조절하는 것도 여기서 가능
 }
 
+//weapon********************************************************//
+void UWBP_UI::BindToWeapon(AWeapon* Wpn)
+{
+    if (!Wpn) return;
+    if (BoundWeapon == Wpn) return;
+    UnbindFromWeapon();
+
+    // 델리게이트 구독
+    Wpn->OnAmmoChanged.AddDynamic(this, &UWBP_UI::OnAmmoChanged);
+    BoundWeapon = Wpn;
+}
+
+void UWBP_UI::UnbindFromWeapon()
+{
+    if (BoundWeapon)
+    {
+        BoundWeapon->OnAmmoChanged.RemoveDynamic(this, &UWBP_UI::OnAmmoChanged);
+        BoundWeapon = nullptr;
+    }
+}
+
+void UWBP_UI::OnAmmoChanged(int32 NewAmmo, int32 NewMax)
+{
+    ApplyAmmoToUI(NewAmmo, NewMax);
+}
+
+void UWBP_UI::ApplyAmmoToUI(int32 Ammo, int32 MaxAmmo)
+{
+    if (Text_Ammo)
+    {
+        Text_Ammo->SetText(FText::FromString(
+            FString::Printf(TEXT("%d / %d"), Ammo, MaxAmmo)
+        ));
+    }
+}
+
+void UWBP_UI::BindToCharacter(ABaseCharacter* C)
+{
+    if (!C || BoundCharacter == C) return;
+    UnbindFromCharacter();
+    C->OnCurrentWeaponChanged.AddDynamic(this, &UWBP_UI::OnCurrentWeaponChanged);
+    BoundCharacter = C;
+}
+
+void UWBP_UI::UnbindFromCharacter()
+{
+    if (BoundCharacter)
+    {
+        BoundCharacter->OnCurrentWeaponChanged.RemoveDynamic(this, &UWBP_UI::OnCurrentWeaponChanged);
+        BoundCharacter = nullptr;
+    }
+}
+
+void UWBP_UI::OnCurrentWeaponChanged(AWeapon* NewWeapon)
+{
+    BindToWeapon(NewWeapon);
+    if (NewWeapon) ApplyAmmoToUI(NewWeapon->GetAmmo(), NewWeapon->GetMaxAmmo());
+    else if (Text_Ammo) Text_Ammo->SetText(FText::FromString(TEXT("-- / --")));
+}
+
+
+
 void UWBP_UI::NativeDestruct()
 {
     UnbindFromHealth();
+    UnbindFromWeapon();  // ★ 탄약 구독 해제 추가
+    UnbindFromCharacter(); // ★ 추가
+
     Super::NativeDestruct();
 }

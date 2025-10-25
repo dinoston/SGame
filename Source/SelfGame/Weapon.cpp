@@ -36,6 +36,8 @@ void AWeapon::BeginPlay()
 
 	OwnerChar = Cast<ACharacter>(GetOwner());
 	
+    OnAmmoChanged.Broadcast(Ammo, MaxAmmo); // ★ 초기 UI 세팅
+
 }
 
 void AWeapon::Tick(float DeltaTime)
@@ -65,6 +67,9 @@ int32 AWeapon::AddAmmo(int32 Amount)
 
     const int32 Old = Ammo;
     Ammo = FMath::Clamp(Ammo + Amount, 0, MaxAmmo);
+
+    if (Ammo != Old)
+        OnAmmoChanged.Broadcast(Ammo, MaxAmmo); // ★ 변화 알림
 
     return Ammo - Old;
 }
@@ -244,6 +249,7 @@ void AWeapon::Fire()
             DrawDebugLine(GetWorld(), Start, End, FColor::Silver, false, 1.0f, 0, 1.5f);
         }
     }
+    OnAmmoChanged.Broadcast(Ammo, MaxAmmo); // ★ 변화 알림
 
     LastFireTime = GetWorld()->GetTimeSeconds();
 }

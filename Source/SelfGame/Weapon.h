@@ -13,6 +13,7 @@ class USoundBase;
 class UDamageType;
 class ACharacter;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChanged, int32, Ammo, int32, MaxAmmo);
 
 UCLASS()
 class SELFGAME_API AWeapon : public AActor
@@ -102,6 +103,17 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
 	int32 Ammo = 30;
+
+	// ★ UI가 바인딩할 이벤트
+	UPROPERTY(BlueprintAssignable, Category = "Weapon|Ammo")
+	FOnAmmoChanged OnAmmoChanged;
+
+	// ★ 블루프린트에서도 쓰기 쉬운 Getter
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	int32 GetAmmo() const { return Ammo; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	int32 GetMaxAmmo() const { return MaxAmmo; }
 
 	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
 	int32 AddAmmo(int32 Amount);

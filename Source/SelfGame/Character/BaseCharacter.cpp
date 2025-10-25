@@ -182,6 +182,10 @@ void ABaseCharacter::EquipWeaponType(EWeaponType NewType)
 
     // 3) 현재 타입 갱신 → AnimBP에서 이 값으로 포즈 전환
     CurrentWeaponType = NewType;
+
+
+    // ★ 추가: UI에게 알림
+    OnCurrentWeaponChanged.Broadcast(CurrentWeapon);
 }
 
 void ABaseCharacter::UnEquipAll()
@@ -257,6 +261,9 @@ void ABaseCharacter::EquipPistol()
     CurrentWeapon = PistolWeapon;
     AttachWeapon(CurrentWeapon);
 
+
+    // ★ 추가
+    OnCurrentWeaponChanged.Broadcast(CurrentWeapon);
 }
 
 void ABaseCharacter::EquipRifle()
@@ -272,6 +279,9 @@ void ABaseCharacter::EquipRifle()
 
     CurrentWeapon = RifleWeapon;
     AttachWeapon(CurrentWeapon);
+
+    // ★ 추가
+    OnCurrentWeaponChanged.Broadcast(CurrentWeapon);
 }
 
 float ABaseCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
