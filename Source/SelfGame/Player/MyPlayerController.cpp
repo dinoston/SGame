@@ -5,12 +5,20 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/Character.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "../HealthComponent.h"     // ★ 추가
+#include "GameFramework/PlayerController.h"
+
+#include "../UI/WBP_UI.h" // UWBP_UI로 캐스팅해 InitFromPawn 호출하려면
+
 #include "../Character/BaseCharacter.h"
 
 AMyPlayerController::AMyPlayerController(const FObjectInitializer& ObjectInitializer) 
 	: Super(ObjectInitializer)
 {
 }
+
+
 
 void AMyPlayerController::BeginPlay()
 {
@@ -20,9 +28,12 @@ void AMyPlayerController::BeginPlay()
 		if (auto* Subsys = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LP))
 			if (DefaultIMC) Subsys->AddMappingContext(DefaultIMC, 0);
 
-	bShowMouseCursor = false;          // 커서 숨김
-	FInputModeGameOnly Mode;           // 게임 입력만
-	SetInputMode(Mode);
+	// 처음엔 메인 메뉴
+	ShowMainMenu();
+
+	//bShowMouseCursor = false;          // 커서 숨김
+	//FInputModeGameOnly Mode;           // 게임 입력만
+	//SetInputMode(Mode);
 
 	// ★ 피치(상하) 한계 설정
 	if (PlayerCameraManager)
@@ -35,6 +46,11 @@ void AMyPlayerController::BeginPlay()
 	}
 }
 
+void AMyPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	BindToPawn(InPawn);               // 리스폰/포제션 때 사망 이벤트 재연결
+}
 
 void AMyPlayerController::SetupInputComponent()
 {
@@ -46,6 +62,7 @@ void AMyPlayerController::SetupInputComponent()
 		if (IA_Move)	EIC->BindAction(IA_Move, ETriggerEvent::Triggered, this, &ThisClass::Input_Move);
 		if (IA_Look)	EIC->BindAction(IA_Look, ETriggerEvent::Triggered, this, &ThisClass::Input_Look);
 		
+
 		// ★ 점프: 누를 때/뗄 때
 		if (IA_Jump)
 		{
@@ -102,3 +119,92 @@ void AMyPlayerController::Input_JumpStart(const FInputActionValue&)
 //}
 
 
+// ================= UI 전환 =================
+void AMyPlayerController::ShowMainMenu()
+{
+	SetPause(true);
+	bShowMouseCursor = true;
+	SetInputMode(FInputModeUIOnly{});
+
+	if (!MainMenu && MainMenuClass) MainMenu = CreateWidget<UUserWidget>(this, MainMenuClass);
+	if (MainMenu && !MainMenu->IsInViewport()) MainMenu->AddToViewport(100);
+
+	if (InGameUI) InGameUI->RemoveFromParent();
+	if (EndGameUI) EndGameUI->RemoveFromParent();
+}
+
+void AMyPlayerController::ShowInGameUI()
+{
+	SetPause(false);
+	bShowMouseCursor = false;
+	SetInputMode(FInputModeGameOnly{});
+
+	if (!InGameUI && InGameUIClass) InGameUI = CreateWidget<UUserWidget>(this, InGameUIClass);
+	if (InGameUI && !InGameUI->IsInViewport()) InGameUI->AddToViewport(10);
+
+	if (MainMenu) MainMenu->RemoveFromParent();
+	if (EndGameUI) EndGameUI->RemoveFromParent();
+
+	// UWBP_UI라면 현재 Pawn으로 초기화
+	if (auto* UI = Cast<UWBP_UI>(InGameUI))
+		if (APawn* P = GetPawn())
+			UI->InitFromPawn(P);
+}
+
+void AMyPlayerController::ShowEndGameUI()
+{
+	SetPause(true);
+	bShowMouseCursor = true;
+	SetInputMode(FInputModeUIOnly{});
+
+	if (!EndGameUI && EndGameClass) EndGameUI = CreateWidget<UUserWidget>(this, EndGameClass);
+	if (EndGameUI && !EndGameUI->IsInViewport()) EndGameUI->AddToViewport(200);
+
+	if (InGameUI) InGameUI->RemoveFromParent();
+	if (MainMenu) MainMenu->RemoveFromParent();
+}
+
+// 메뉴 버튼에서 불릴 공개 함수들
+void AMyPlayerController::StartGame()
+{
+	ShowInGameUI();
+}
+void AMyPlayerController::GoToMainMenu()
+{
+	ShowMainMenu();
+}
+void AMyPlayerController::RestartCurrentLevel()
+{
+	UGameplayStatics::OpenLevel(this, FName(*GetWorld()->GetName()));
+}
+
+// ================= 사망 감지 =================
+void AMyPlayerController::BindToPawn(APawn* P)
+{
+	UnbindFromPawn();
+	if (!P) return;
+
+	if (UHealthComponent* HC = P->FindComponentByClass<UHealthComponent>())
+	{
+		HC->OnDeath.AddDynamic(this, &AMyPlayerController::OnPawnDied);
+		BoundHealth = HC;
+	}
+
+	// 인게임 UI가 이미 떠 있었으면 새 Pawn으로 재초기화
+	if (auto* UI = Cast<UWBP_UI>(InGameUI))
+		UI->InitFromPawn(P);
+}
+
+void AMyPlayerController::UnbindFromPawn()
+{
+	if (BoundHealth)
+	{
+		BoundHealth->OnDeath.RemoveDynamic(this, &AMyPlayerController::OnPawnDied);
+		BoundHealth = nullptr;
+	}
+}
+
+void AMyPlayerController::OnPawnDied()
+{
+	ShowEndGameUI();
+}
