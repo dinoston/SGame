@@ -22,9 +22,12 @@ public:
 	AMyPlayerController(const FObjectInitializer& ObjectInitializer);
 
 	// 메뉴에서 버튼이 호출할 함수들
-	UFUNCTION(BlueprintCallable) void StartGame();     // Start 클릭
-	UFUNCTION(BlueprintCallable) void GoToMainMenu();  // Main Menu 클릭(엔드게임 등)
-	UFUNCTION(BlueprintCallable) void RestartCurrentLevel();  // Restart 클릭(엔드게임)
+	UFUNCTION(BlueprintCallable) 
+	void StartGame();     // Start 클릭
+	UFUNCTION(BlueprintCallable) 
+	void GoToMainMenu();  // Main Menu 클릭(엔드게임 등)
+	UFUNCTION(BlueprintCallable) 
+	void RestartCurrentLevel();  // Restart 클릭(엔드게임)
 
 protected:
 	virtual void BeginPlay() override;
@@ -48,7 +51,8 @@ private:
 	virtual void OnPossess(APawn* InPawn) override;
 	void BindToPawn(APawn* P);
 	void UnbindFromPawn();
-	UFUNCTION() void OnPawnDied();   // HealthComponent의 OnDeath 콜백
+	UFUNCTION() 
+	void OnPawnDied();   // HealthComponent의 OnDeath 콜백
 
 	// ---------- 위젯 클래스 지정 & 인스턴스 ----------
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
@@ -58,11 +62,28 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> EndGameClass;    // WBP_EndGame
 
-	UPROPERTY() TObjectPtr<UUserWidget> MainMenu = nullptr;
-	UPROPERTY() TObjectPtr<UUserWidget> InGameUI = nullptr;
-	UPROPERTY() TObjectPtr<UUserWidget> EndGameUI = nullptr;
+	UPROPERTY() 
+	TObjectPtr<UUserWidget> MainMenu = nullptr;
+	UPROPERTY() 
+	TObjectPtr<UUserWidget> InGameUI = nullptr;
+	UPROPERTY() 
+	TObjectPtr<UUserWidget> EndGameUI = nullptr;
 
-	UPROPERTY() class UHealthComponent* BoundHealth = nullptr;
+	UPROPERTY() 
+	class UHealthComponent* BoundHealth = nullptr;
+
+
+	// 카운트다운 설정
+	UPROPERTY(EditAnywhere, Category = "Countdown")
+	float CountdownDuration = 20.f;
+
+	float CountdownRemaining = 0.f;
+
+	FTimerHandle Timer_Countdown;      // 0.1초 간격으로 갱신
+
+	void StartCountdown();             // 시작/재시작
+	void StopCountdown();              // 멈춤/정리
+	void TickCountdown();              // 주기적 갱신
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "Input")

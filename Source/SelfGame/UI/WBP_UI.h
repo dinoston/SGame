@@ -30,6 +30,13 @@ public:
     UFUNCTION(BlueprintCallable)
     void InitFromPawn(APawn* Pawn);
 
+    //UI*********************************
+    UPROPERTY(meta = (BindWidgetOptinal)) // 없어도 크래시 안 나도록 Optional
+    UTextBlock* Text_Countdown = nullptr;
+
+    UFUNCTION(BlueprintCallable)
+    void UpdateCountdown(float SecondsLeft);
+
 protected:
     /** 디자이너 ProgressBar와 이름 동일해야 자동 바인딩됨 (예: PB_Health) */
     UPROPERTY(meta = (BindWidget))
@@ -71,6 +78,11 @@ protected:
 
     /** 위젯 파괴 시 구독 해제 */
     virtual void NativeDestruct() override;
+
+
+
+ 
+    
 
 private:
     void BindToHealth(UHealthComponent* HC);

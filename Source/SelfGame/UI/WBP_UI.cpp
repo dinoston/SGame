@@ -47,6 +47,20 @@ void UWBP_UI::InitFromPawn(APawn* Pawn)
     }
 }
 
+void UWBP_UI::UpdateCountdown(float SecondsLeft)
+{
+    if (!Text_Countdown) return;
+
+    // 00:00 Çü½Ä
+    const int32 S = FMath::Max(0, FMath::RoundToInt(SecondsLeft));
+    const int32 M = S / 60;
+    const int32 R = S % 60;
+
+    Text_Countdown->SetText(
+        FText::FromString(FString::Printf(TEXT("%02d:%02d"), M, R))
+    );
+}
+
 void UWBP_UI::BindToHealth(UHealthComponent* HC)
 {
     if (!HC) return;

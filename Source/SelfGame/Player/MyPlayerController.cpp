@@ -126,11 +126,18 @@ void AMyPlayerController::ShowMainMenu()
 	bShowMouseCursor = true;
 	SetInputMode(FInputModeUIOnly{});
 
-	if (!MainMenu && MainMenuClass) MainMenu = CreateWidget<UUserWidget>(this, MainMenuClass);
-	if (MainMenu && !MainMenu->IsInViewport()) MainMenu->AddToViewport(100);
+	if (!MainMenu && MainMenuClass) 
+		MainMenu = CreateWidget<UUserWidget>(this, MainMenuClass);
+	if (MainMenu && !MainMenu->IsInViewport()) 
+		MainMenu->AddToViewport(100);
 
-	if (InGameUI) InGameUI->RemoveFromParent();
-	if (EndGameUI) EndGameUI->RemoveFromParent();
+	if (InGameUI) 
+		InGameUI->RemoveFromParent();
+	if (EndGameUI) 
+		EndGameUI->RemoveFromParent();
+
+	StopCountdown();   // 메뉴로 가면 카운트다운 중지
+
 }
 
 void AMyPlayerController::ShowInGameUI()
@@ -139,16 +146,23 @@ void AMyPlayerController::ShowInGameUI()
 	bShowMouseCursor = false;
 	SetInputMode(FInputModeGameOnly{});
 
-	if (!InGameUI && InGameUIClass) InGameUI = CreateWidget<UUserWidget>(this, InGameUIClass);
-	if (InGameUI && !InGameUI->IsInViewport()) InGameUI->AddToViewport(10);
+	if (!InGameUI && InGameUIClass) 
+		InGameUI = CreateWidget<UUserWidget>(this, InGameUIClass);
+	if (InGameUI && !InGameUI->IsInViewport()) 
+		InGameUI->AddToViewport(10);
 
-	if (MainMenu) MainMenu->RemoveFromParent();
-	if (EndGameUI) EndGameUI->RemoveFromParent();
+	if (MainMenu) 
+		MainMenu->RemoveFromParent();
+	if (EndGameUI) 
+		EndGameUI->RemoveFromParent();
 
 	// UWBP_UI라면 현재 Pawn으로 초기화
 	if (auto* UI = Cast<UWBP_UI>(InGameUI))
 		if (APawn* P = GetPawn())
 			UI->InitFromPawn(P);
+
+	// ★ 카운트다운 시작
+	StartCountdown();
 }
 
 void AMyPlayerController::ShowEndGameUI()
@@ -157,11 +171,18 @@ void AMyPlayerController::ShowEndGameUI()
 	bShowMouseCursor = true;
 	SetInputMode(FInputModeUIOnly{});
 
-	if (!EndGameUI && EndGameClass) EndGameUI = CreateWidget<UUserWidget>(this, EndGameClass);
-	if (EndGameUI && !EndGameUI->IsInViewport()) EndGameUI->AddToViewport(200);
+	if (!EndGameUI && EndGameClass) 
+		EndGameUI = CreateWidget<UUserWidget>(this, EndGameClass);
+	if (EndGameUI && !EndGameUI->IsInViewport()) 
+		EndGameUI->AddToViewport(200);
 
-	if (InGameUI) InGameUI->RemoveFromParent();
-	if (MainMenu) MainMenu->RemoveFromParent();
+	if (InGameUI) 
+		InGameUI->RemoveFromParent();
+	if (MainMenu) 
+		MainMenu->RemoveFromParent();
+
+	StopCountdown();   // 엔드게임 화면에서 중지
+
 }
 
 // 메뉴 버튼에서 불릴 공개 함수들
@@ -207,4 +228,44 @@ void AMyPlayerController::UnbindFromPawn()
 void AMyPlayerController::OnPawnDied()
 {
 	ShowEndGameUI();
+}
+
+// ------------ Countdown 구현 ------------
+void AMyPlayerController::StartCountdown()
+{
+	CountdownRemaining = CountdownDuration;
+
+	// UI에 초기값 뿌리기
+	if (auto* UI = Cast<UWBP_UI>(InGameUI))
+		UI->UpdateCountdown(CountdownRemaining);
+
+	// 0.1초 간격으로 갱신 (부드럽게 보이고 너무 잦지도 않게)
+	GetWorldTimerManager().SetTimer(
+		Timer_Countdown, this, &AMyPlayerController::TickCountdown, 0.1f, true
+	);
+}
+
+void AMyPlayerController::StopCountdown()
+{
+	GetWorldTimerManager().ClearTimer(Timer_Countdown);
+}
+
+void AMyPlayerController::TickCountdown()
+{
+	CountdownRemaining = FMath::Max(0.f, CountdownRemaining - 0.1f);
+
+	if (auto* UI = Cast<UWBP_UI>(InGameUI))
+		UI->UpdateCountdown(CountdownRemaining);
+
+	if (CountdownRemaining <= 0.f)
+	{
+		// 끝! 카운트다운 중지하고 즉시 사망 처리
+		StopCountdown();
+
+		if (APawn* P = GetPawn())
+			if (auto* HC = P->FindComponentByClass<UHealthComponent>())
+				HC->TakeDamage(99999.f);  // 큰 수로 즉사
+
+		// 사망하면 OnPawnDied() -> ShowEndGameUI()로 넘어감
+	}
 }
