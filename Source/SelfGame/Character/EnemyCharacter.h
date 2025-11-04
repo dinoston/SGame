@@ -23,5 +23,8 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
     UWidgetComponent* WC_Health = nullptr;
 
+
+    UFUNCTION()
+    void OnEnemyDeath();
    
 };
