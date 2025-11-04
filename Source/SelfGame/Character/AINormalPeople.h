@@ -6,6 +6,10 @@
 #include "GameFramework/Character.h"
 #include "AINormalPeople.generated.h"
 
+class UHealthComponent;
+class UDamageType;
+class AController;
+
 UCLASS()
 class SELFGAME_API AAINormalPeople : public ACharacter
 {
@@ -16,8 +20,21 @@ public:
 	AAINormalPeople();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	TObjectPtr<UHealthComponent> HealthComp;
+
+	UFUNCTION() 
+	void OnAnyDamage(AActor* DamagedActor,
+		float Damage,
+		const UDamageType* DamageType,
+		AController* InstigatedBy,
+		AActor* DamageCauser);
+
+
+	UFUNCTION() 
+	void OnDead(); // 죽었을 때 처리(애니, 제거 등)
 
 public:	
 	// Called every frame
