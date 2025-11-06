@@ -1,65 +1,64 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "AINormalPeople.h"
 #include "../HealthComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Components/CapsuleComponent.h"   
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/Controller.h"  
+#include "../Weapon.h"
 
-// Sets default values
+#include "GameFramework/SpringArmComponent.h"
+#include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
+
 AAINormalPeople::AAINormalPeople()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	//.bCanEverTick = true;
+    // --- 체력 설정: 한 방 혹은 몇 방에 죽게 만들 값 ---
+    if (HealthComp)
+    {
+        HealthComp->MaxHP = 20.f;   // 여기서 바로 조절 가능
+        HealthComp->StartHP = 20.f;
+    }
 
-	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComp"));
+    // --- 이동 속도: 천천히 걷고 조금 빨리 뛰는 정도 ---
+    WalkSpeed = 200.f;
+    SprintSpeed = 500.f;
 
-	// 이동 파라미터(원하면 조정)
-	GetCharacterMovement()->MaxWalkSpeed = 250.f;
+    if (UCharacterMovementComponent* Move = GetCharacterMovement())
+    {
+        Move->MaxWalkSpeed = WalkSpeed;
+    }
 
+    // 이 캐릭터는 플레이어 입력 안 쓰니까
+    // BaseCharacter에 있는 Fire/무기 관련 함수는 그냥 안 쓰면 됨.
+
+    // 필요하면 콜리전 채널도 여기서 맞춰줄 수 있음 (총알 채널 Block)
+    // GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Block);
+    // GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Block);
 }
 
-// Called when the game starts or when spawned
 void AAINormalPeople::BeginPlay()
 {
-	Super::BeginPlay();
-	
-	// UE 표준 데미지 파이프라인 수신 → 우리 HealthComp로 전달
-	OnTakeAnyDamage.AddDynamic(this, &ThisClass::OnAnyDamage);
+    Super::BeginPlay();
 
-	// 죽음 이벤트(HealthComponent에 이미 OnDeath 있다면 거기 바인딩)
-	if (HealthComp)
-		HealthComp->OnDeath.AddDynamic(this, &ThisClass::OnDead);
+    // 혹시 BaseCharacter에서 무기를 스폰했더라도,
+    // 이 AI는 맨손이어야 하니 전부 해제 + 파괴해둔다.
 
+    UnEquipAll();
+
+    if (PistolWeapon)
+    {
+        PistolWeapon->Destroy();
+        PistolWeapon = nullptr;
+    }
+
+    if (RifleWeapon)
+    {
+        RifleWeapon->Destroy();
+        RifleWeapon = nullptr;
+    }
+
+    // UI도 필요 없으니, BP에서 CharacterUI를 비워두면 생성 안 됨.
+
+    if (!IsPlayerControlled())
+    {
+        if (Camera) { Camera->DestroyComponent(); }
+        if (SpringArm) { SpringArm->DestroyComponent(); }
+    }
 }
-
-void AAINormalPeople::OnAnyDamage(AActor* DamagedActor, float Damage, const UDamageType*, AController* InstigatedBy, AActor* DamageCauser)
-{
-	if (HealthComp && Damage > 0.f)
-		HealthComp->TakeDamage(Damage); // 네가 만든 TakeDamage(float) 재사용
-}
-
-void AAINormalPeople::OnDead()
-{
-	// 1) 데스 몽타주 재생 or 래그돌
-	// 2) AI 정지 / 콜리전 끄기 / 일정 시간 뒤 Destroy 등
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	// Destroy를 원하면 타이머로 지우기
-	// SetLifeSpan(5.f);
-}
-
-// Called every frame
-void AAINormalPeople::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
-// Called to bind functionality to input
-void AAINormalPeople::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
-

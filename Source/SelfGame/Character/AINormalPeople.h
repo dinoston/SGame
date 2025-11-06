@@ -1,46 +1,36 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "BaseCharacter.h"             // ★ 네가 만든 베이스 캐릭터
 #include "AINormalPeople.generated.h"
 
-class UHealthComponent;
-class UDamageType;
-class AController;
 
+class UBehaviorTree;
+
+/**
+ * 걷고 뛰고, 총 맞으면 죽기만 하는 단순 AI용 캐릭터
+ * - Health / Damage / Die 는 전부 ABaseCharacter에서 재사용
+ * - 여기서는 기본 능력치와 무기/UI 제거만 처리
+ */
 UCLASS()
-class SELFGAME_API AAINormalPeople : public ACharacter
+class SELFGAME_API AAINormalPeople : public ABaseCharacter
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
-	AAINormalPeople();
+    AAINormalPeople();
 
 protected:
-	virtual void BeginPlay() override;
+    virtual void BeginPlay() override;
+    
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
-	TObjectPtr<UHealthComponent> HealthComp;
+public:
+    // 나중에 BT에서 쓸 플래그
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+    bool bIsPanic = false;
 
-	UFUNCTION() 
-	void OnAnyDamage(AActor* DamagedActor,
-		float Damage,
-		const UDamageType* DamageType,
-		AController* InstigatedBy,
-		AActor* DamageCauser);
-
-
-	UFUNCTION() 
-	void OnDead(); // 죽었을 때 처리(애니, 제거 등)
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+public:
+    // 이 AI가 사용할 Behavior Tree (BP_AINormalPeople에서 지정)
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
+    UBehaviorTree* BehaviorTreeAsset = nullptr;
 };
