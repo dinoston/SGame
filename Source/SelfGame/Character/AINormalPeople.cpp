@@ -3,6 +3,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "../Weapon.h"
 
+#include "BehaviorTree/BlackboardComponent.h"
+#include "AIController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -61,4 +63,36 @@ void AAINormalPeople::BeginPlay()
         if (Camera) { Camera->DestroyComponent(); }
         if (SpringArm) { SpringArm->DestroyComponent(); }
     }
+}
+
+float AAINormalPeople::TakeDamage(float DamageAmount,
+    FDamageEvent const& DamageEvent,
+    AController* EventInstigator,
+    AActor* DamageCauser)
+{
+    // 기본 체력 처리 (죽음 처리 포함)
+    const float Dealt = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+    // 유효한 데미지, 아직 안 죽었고, 아직 패닉 아니면
+    if (Dealt > 0.f && !bIsDead && !bIsPanic)
+    {
+        bIsPanic = true;
+
+        // 이동속도 업
+        if (UCharacterMovementComponent* Move = GetCharacterMovement())
+        {
+            Move->MaxWalkSpeed = SprintSpeed;
+        }
+
+        // Blackboard IsPanic = true 세팅
+        if (AAIController* AICon = Cast<AAIController>(GetController()))
+        {
+            if (UBlackboardComponent* BB = AICon->GetBlackboardComponent())
+            {
+                BB->SetValueAsBool(TEXT("IsPanic"), true);
+            }
+        }
+    }
+
+    return Dealt;
 }

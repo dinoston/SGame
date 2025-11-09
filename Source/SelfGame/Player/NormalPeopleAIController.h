@@ -21,4 +21,6 @@ protected:
     UBlackboardComponent* BlackboardComp;
 
 
+
+
 };

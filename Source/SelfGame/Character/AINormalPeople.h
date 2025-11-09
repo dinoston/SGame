@@ -33,4 +33,9 @@ public:
     // 이 AI가 사용할 Behavior Tree (BP_AINormalPeople에서 지정)
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
     UBehaviorTree* BehaviorTreeAsset = nullptr;
+
+    virtual float TakeDamage(float DamageAmount,
+        struct FDamageEvent const& DamageEvent,
+        class AController* EventInstigator,
+        class AActor* DamageCauser) override;
 };
