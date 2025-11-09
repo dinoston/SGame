@@ -4,7 +4,6 @@
 #include "AIController.h"
 #include "NormalPeopleAIController.generated.h"
 
-class UBlackboardComponent;
 
 UCLASS()
 class SELFGAME_API ANormalPeopleAIController : public AAIController
@@ -16,9 +15,7 @@ public:
 
     virtual void OnPossess(APawn* InPawn) override;
 
-protected:
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-    UBlackboardComponent* BlackboardComp;
+
 
 
 
