@@ -7,6 +7,8 @@
 class UWidgetComponent;
 class UHealthComponent;
 class UWBP_EnemyHealth;
+class AEnemyAIController;
+
 
 UCLASS()
 class SELFGAME_API AEnemyCharacter : public ABaseCharacter
@@ -14,6 +16,9 @@ class SELFGAME_API AEnemyCharacter : public ABaseCharacter
     GENERATED_BODY()
 public:
     AEnemyCharacter();
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+    class UBehaviorTree* BehaviorTreeAsset;
 
 protected:
     virtual void BeginPlay() override;

@@ -1,6 +1,7 @@
 #include "EnemyCharacter.h"
 #include "Camera/CameraComponent.h"
 
+#include "../Player/EnemyAIController.h"
 #include "../UI/EnemyHealth.h" // UWBP_EnemyHealth
 #include "../HealthComponent.h"
 #include "Components/WidgetComponent.h"
@@ -11,6 +12,8 @@ AEnemyCharacter::AEnemyCharacter()
 {
     // 월드에 배치/스폰되면 자동으로 AI가 소유
     AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+    AIControllerClass = AEnemyAIController::StaticClass();
+
 
     WC_Health = CreateDefaultSubobject<UWidgetComponent>(TEXT("WC_Health"));
     WC_Health->SetupAttachment(GetMesh());                  // 또는 RootComponent
