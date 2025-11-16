@@ -15,6 +15,8 @@ AEnemyCharacter::AEnemyCharacter()
     AIControllerClass = AEnemyAIController::StaticClass();
 
 
+
+
     WC_Health = CreateDefaultSubobject<UWidgetComponent>(TEXT("WC_Health"));
     WC_Health->SetupAttachment(GetMesh());                  // ¶Ç´Â RootComponent
     WC_Health->SetWidgetSpace(EWidgetSpace::World);
