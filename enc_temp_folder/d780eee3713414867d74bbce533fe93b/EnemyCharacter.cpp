@@ -33,6 +33,7 @@ void AEnemyCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
+    EquipWeaponType(EWeaponType::Pistol);
 
     // ★ 위젯 인스턴스 보장
     if (WC_Health && !WC_Health->GetUserWidgetObject())
