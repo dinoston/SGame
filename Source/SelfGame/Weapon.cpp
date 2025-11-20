@@ -157,21 +157,18 @@ void AWeapon::Fire()
     // ★ 탄약 0이면 딱-딱 사운드만 재생하고 종료
     if (Ammo == 0)
     {
-        // 머즐 소켓에서 나게 하거나, 위치 없으면 액터 위치에서
         if (EmptySound)
         {
             if (Mesh && Mesh->DoesSocketExist(MuzzleSocketName))
                 UGameplayStatics::SpawnSoundAttached(EmptySound, Mesh, MuzzleSocketName);
             else
-                UGameplayStatics::PlaySoundAtLocation(this, EmptySound,
+                UGameplayStatics::PlaySoundAtLocation(
+                    this, EmptySound,
                     Mesh ? Mesh->GetComponentLocation() : GetActorLocation());
         }
-        return;
-    }
 
-    // ① 0발이면 발사 차단 + 안내
-    if (Ammo == 0) {
-        if (GEngine) {
+        if (GEngine)
+        {
             GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, TEXT("No ammo!"));
         }
         return;
@@ -181,56 +178,57 @@ void AWeapon::Fire()
     const FVector Start = MuzzleXf.GetLocation();
     const FVector Dir = MuzzleXf.GetRotation().Vector();
 
-
     // 탄약 소모(무한탄 예외: Ammo<0 는 소모 안 함)
-    if (Ammo > 0) {
-        Ammo = FMath::Max(Ammo - 1, 0);  // 음수 방지
+    if (Ammo > 0)
+    {
+        Ammo = FMath::Max(Ammo - 1, 0);
     }
 
-    // ② 남은 탄 화면 표기
-    if (GEngine) {
+    if (GEngine)
+    {
         GEngine->AddOnScreenDebugMessage(
             -1, 1.0f, FColor::Green,
             FString::Printf(TEXT("Ammo: %d / %d"), Ammo, MaxAmmo));
     }
 
-    // 머즐 FX/사운드
     PlayMuzzleFX(MuzzleXf);
 
-    // 투사체 모드
+    // ───── Projectile 모드 ─────
     if (ProjectileClass)
     {
         FActorSpawnParameters Params;
         Params.Owner = this;
-        Params.Instigator = OwnerChar; // 선택: 데미지 instigator 연동
+        Params.Instigator = OwnerChar;
         Params.SpawnCollisionHandlingOverride =
             ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
         GetWorld()->SpawnActor<AActor>(ProjectileClass, MuzzleXf, Params);
     }
-    // 히트스캔 모드
+    // ───── Hit-scan 모드 ─────
     else
     {
         const FVector End = Start + Dir * Range;
 
         FHitResult Hit;
-
-        // ▼ 디버그/머티리얼 옵션 추가
-        FCollisionQueryParams QParams(SCENE_QUERY_STAT(WeaponTrace), /*bTraceComplex*/ true, this);
-        QParams.bReturnPhysicalMaterial = true;      // 표면별 FX 쓸 때 유용
-        QParams.TraceTag = TEXT("WeaponTrace");      // 디버그 태그
+        FCollisionQueryParams QParams(SCENE_QUERY_STAT(WeaponTrace), true, this);
+        QParams.bReturnPhysicalMaterial = true;
+        QParams.TraceTag = TEXT("WeaponTrace");
 
         if (OwnerChar) QParams.AddIgnoredActor(OwnerChar);
         QParams.AddIgnoredActor(this);
 
-        // ▼ 커스텀 트레이스 채널 사용 (Bullet)
         if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, BULLET_CH, QParams))
         {
-            // (선택) 디버그 라인
-            DrawDebugLine(GetWorld(), Start, Hit.ImpactPoint, FColor::Red, false, 1.0f, 0, 1.5f);
-
+            // 맞았을 때 디버그 + 데미지
             if (AActor* Target = Hit.GetActor())
             {
+                if (GEngine)
+                {
+                    GEngine->AddOnScreenDebugMessage(
+                        -1, 1.f, FColor::Red,
+                        FString::Printf(TEXT("Hit: %s"), *Target->GetName()));
+                }
+
                 TSubclassOf<UDamageType> DamageTypeClass = DamageType;
                 if (!DamageTypeClass) DamageTypeClass = UDamageType::StaticClass();
 
@@ -240,20 +238,21 @@ void AWeapon::Fire()
                     this, DamageTypeClass);
             }
 
-            // 임팩트 FX/사운드
+            // 맞은 지점까지 라인
+            DrawDebugLine(GetWorld(), Start, Hit.ImpactPoint, FColor::Red, false, 1.0f, 0, 1.5f);
+
             PlayImpactFX(Hit);
         }
         else
         {
-            // (선택) 미스샷 디버그 라인
+            // 빗나간 경우 라인
             DrawDebugLine(GetWorld(), Start, End, FColor::Silver, false, 1.0f, 0, 1.5f);
         }
     }
-    OnAmmoChanged.Broadcast(Ammo, MaxAmmo); // ★ 변화 알림
 
+    OnAmmoChanged.Broadcast(Ammo, MaxAmmo);
     LastFireTime = GetWorld()->GetTimeSeconds();
 }
-
 
 
 

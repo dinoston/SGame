@@ -75,7 +75,7 @@ private:
 
 	// 카운트다운 설정
 	UPROPERTY(EditAnywhere, Category = "Countdown")
-	float CountdownDuration = 20.f;
+	float CountdownDuration = 200.f;
 
 	float CountdownRemaining = 0.f;
 
