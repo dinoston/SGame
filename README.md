@@ -2,9 +2,9 @@
 
 ## Gameplay Video / 게임플레이 영상
 
-[![Watch the ShtGameDEV gameplay video on YouTube](https://img.youtube.com/vi/3SFNkZAEDhU/maxresdefault.jpg)](https://www.youtube.com/watch?v=3SFNkZAEDhU)
+[![ShtGameDEV gameplay preview](media/shtgame-gameplay-preview.gif)](https://www.youtube.com/watch?v=3SFNkZAEDhU)
 
-**▶ [Watch on YouTube / 유튜브에서 바로 보기](https://www.youtube.com/watch?v=3SFNkZAEDhU)**
+**▶ [Watch the full video on YouTube / 유튜브에서 전체 영상 보기](https://www.youtube.com/watch?v=3SFNkZAEDhU)**
 
 ## English
 
