@@ -1,5 +1,11 @@
 # ShtGameDEV — Unreal Engine Shooter Prototype
 
+## Gameplay Video / 게임플레이 영상
+
+[![Watch the ShtGameDEV gameplay video on YouTube](https://img.youtube.com/vi/3SFNkZAEDhU/maxresdefault.jpg)](https://www.youtube.com/watch?v=3SFNkZAEDhU)
+
+**▶ [Watch on YouTube / 유튜브에서 바로 보기](https://www.youtube.com/watch?v=3SFNkZAEDhU)**
+
 ## English
 
 ShtGameDEV is a third-person shooter prototype developed in Unreal Engine with a combination of C++ gameplay systems and Blueprint content. The project explores character combat, weapons, enemy AI, pickups, UI feedback, visual effects, and environment optimization.
